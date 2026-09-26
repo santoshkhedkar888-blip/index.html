@@ -739,7 +739,7 @@
               <p><strong>${SHOP.name}</strong> (${SHOP.phone})</p>  
             </div>  
           </div>  
-          <script>window.onload = () => window.print();<\/script>  
+          \x3cscript>window.onload = () => window.print();\x3c/script>  
         </body>  
         </html>  
       `);  
@@ -756,7 +756,7 @@
         <head>  
           <meta charset="UTF-8">  
           <title>Job Card - ${SHOP.name}</title>  
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>  
+          \x3cscript src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">\x3c/script>  
           <style>  
             body { font-family: Arial, sans-serif; padding: 25px; }  
             .card { max-width: 800px; margin: auto; border: 2px solid #111; padding: 25px; position:relative; }  
@@ -792,7 +792,7 @@
               <div>${SHOP.name}<br>अधिकृत सही</div>  
             </div>  
           </div>  
-          <script>  
+          \x3cscript>  
             window.onload = () => {  
               new QRCode(document.getElementById("qrCodeContainer"), {  
                 text: "${trackURL}",  
@@ -800,7 +800,7 @@
               });  
               setTimeout(() => window.print(), 500);  
             };  
-          <\/script>  
+          \x3c/script>  
         </body>  
         </html>  
       `);  
@@ -852,7 +852,7 @@
             <p style="margin:3px 0;">UPI: ${SHOP.upi}</p>  
             <p style="margin:3px 0;">धन्यवाद! पुन्हा भेट द्या.</p>  
           </div>  
-          <script>window.onload = () => window.print();<\/script>  
+          \x3cscript>window.onload = () => window.print();\x3c/script>  
         </body>  
         </html>  
       `);  
