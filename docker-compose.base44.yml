@@ -1,0 +1,16 @@
+# Base44 dev environment for the SK COMPUTER static portal.
+# Single static index.html using Firebase (hosted SaaS) as its backend.
+# Served by nginx on port 3000 with the repo bind-mounted so edits are live.
+services:
+  web:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
