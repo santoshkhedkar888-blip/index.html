@@ -1,2001 +1,625 @@
 <!DOCTYPE html>
 <html lang="mr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SK COMPUTER | Customer Portal & Management</title>
-
-  <!-- Firebase App & Services -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-    import {  
-      getAuth,  
-      onAuthStateChanged,  
-      createUserWithEmailAndPassword,  
-      signInWithEmailAndPassword,  
-      signOut,  
-      sendPasswordResetEmail,  
-      sendEmailVerification  
-    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";  
-    import {  
-      getFirestore,  
-      doc,  
-      getDoc,  
-      setDoc,  
-      updateDoc,  
-      addDoc,  
-      collection,  
-      onSnapshot,  
-      serverTimestamp,  
-      getDocs,  
-      runTransaction
-    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";  
-    import {  
-      getStorage,  
-      ref,  
-      uploadBytes,  
-      getDownloadURL  
-    } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-storage.js";  
-
-    /* =========================================================  
-       FIREBASE CONFIG  
-    ========================================================= */  
-    const firebaseConfig = {  
-      apiKey: "AIzaSyCguRWlUD0XhbTT-t90qxmhVMKRe-j09b8",  
-      authDomain: "sk-computer-53668.firebaseapp.com",  
-      projectId: "sk-computer-53668",  
-      storageBucket: "sk-computer-53668.firebasestorage.app",  
-      messagingSenderId: "181873271339",  
-      appId: "1:181873271339:web:b22202fac5706669e8406e",  
-      measurementId: "G-SH186W2EVD"  
-    };  
-
-    const app = initializeApp(firebaseConfig);  
-    const auth = getAuth(app);  
-    const db = getFirestore(app);  
-    const storage = getStorage(app);  
-
-    /* =========================================================  
-       SHOP DETAILS  
-    ========================================================= */  
-    const SHOP = {  
-      name: "SK COMPUTER",  
-      address: "Eknathwadi, Pathardi, Ahilyanagar, Maharashtra",  
-      phone: "8888146077",  
-      whatsapp: "918888146077",  
-      upi: "santoshkhedkar@ybl",  
-      owner: "Santosh Khedkar"  
-    };  
-
-    /* =========================================================  
-       GLOBAL STATE  
-    ========================================================= */  
-    let currentUser = null;  
-    let currentCustomer = null;  
-    let isAdmin = false;  
-
-    const jobsStore = new Map();  
-    const customersStore = new Map();  
-    let customersCache = [];  
-    let currentAdminCustomerJobs = [];  
-    let allAdminPaymentsCache = [];
-
-    let unsubscribeJobs = null;  
-    let unsubscribeAdminJobs = null;  
-    let unsubscribeCustomers = null;  
-    let currentSelectedCustUid = null;  
-
-    const $ = id => document.getElementById(id);  
-
-    function money(value) {  
-      return "₹" + Number(value || 0).toLocaleString("en-IN");  
-    }  
-
-    function escapeHTML(value = "") {  
-      return String(value)  
-        .replaceAll("&", "&amp;")  
-        .replaceAll("<", "&lt;")  
-        .replaceAll(">", "&gt;")  
-        .replaceAll('"', "&quot;")  
-        .replaceAll("'", "&#39;");  
-    }  
-
-    function formatDate(value) {  
-      if (!value) return "-";  
-      let date = value?.toDate ? value.toDate() : new Date(value);  
-      if (isNaN(date)) return "-";  
-      return date.toLocaleDateString("mr-IN", {  
-        day: "2-digit",  
-        month: "2-digit",  
-        year: "numeric"  
-      });  
-    }  
-
-    function formatDateTime(value) {  
-      if (!value) return "-";  
-      let date = value?.toDate ? value.toDate() : new Date(value);  
-      if (isNaN(date)) return "-";  
-      return date.toLocaleString("mr-IN");  
-    }  
-
-    function statusText(status) {  
-      const map = {  
-        Pending: "प्रलंबित",  
-        Processing: "काम सुरू आहे",  
-        Completed: "काम पूर्ण (तयार आहे)",  
-        Cancelled: "रद्द"  
-      };  
-      return map[status] || status || "प्रलंबित";  
-    }  
-
-    function statusClass(status) {  
-      return {  
-        Pending: "pending",  
-        Processing: "processing",  
-        Completed: "completed",  
-        Cancelled: "cancelled"  
-      }[status] || "pending";  
-    }  
-
-    function paymentStatus(total, paid) {  
-      total = Number(total || 0);  
-      paid = Number(paid || 0);  
-      if (total <= 0) return "Not Set";  
-      if (paid >= total) return "Paid";  
-      if (paid > 0) return "Partial";  
-      return "Unpaid";  
-    }  
-
-    function paymentText(status) {  
-      return {  
-        Paid: "पूर्ण भरले",  
-        Partial: "अंशतः भरले",  
-        Unpaid: "बाकी",  
-        "Not Set": "रक्कम नाही"  
-      }[status] || status;  
-    }  
-
-    function showMessage(message, type = "success") {  
-      const box = $("message");  
-      if (!box) return;  
-      box.className = "message " + type;  
-      box.innerText = message;  
-      box.style.display = "block";  
-      setTimeout(() => {  
-        box.style.display = "none";  
-      }, 4000);  
-    }  
-
-    window.toggleTheme = function() {  
-      const currentTheme = document.documentElement.getAttribute("data-theme");  
-      const newTheme = currentTheme === "dark" ? "light" : "dark";  
-      document.documentElement.setAttribute("data-theme", newTheme);  
-      localStorage.setItem("sk_theme", newTheme);  
-    };  
-
-    function firebaseError(error) {  
-      const code = error?.code || "";  
-      const messages = {  
-        "auth/invalid-email": "ई-मेल चुकीचा आहे.",  
-        "auth/user-not-found": "हा ई-मेल नोंदणीकृत नाही.",  
-        "auth/wrong-password": "पासवर्ड चुकीचा आहे.",  
-        "auth/invalid-credential": "ई-मेल किंवा पासवर्ड चुकीचा आहे.",  
-        "auth/email-already-in-use": "हा ई-मेल आधीच वापरात आहे.",  
-        "auth/weak-password": "पासवर्ड किमान 6 अक्षरांचा असावा.",  
-        "auth/too-many-requests": "खूप प्रयत्न झाले. थोड्या वेळाने पुन्हा प्रयत्न करा.",  
-        "permission-denied": "आपल्याला ही माहिती हाताळण्याची परवानगी नाही."  
-      };  
-      return messages[code] || error?.message || "काहीतरी चूक झाली.";  
-    }  
-
-    function populateShopInfo() {  
-      if ($("shopContactName")) $("shopContactName").innerText = `🏪 ${SHOP.name}`;  
-      if ($("shopContactAddress")) $("shopContactAddress").innerText = `📍 ${SHOP.address}`;  
-      if ($("shopContactPhone")) $("shopContactPhone").innerText = `📞 ${SHOP.phone}`;  
-      if ($("shopContactUpi")) $("shopContactUpi").innerText = `💳 UPI: ${SHOP.upi}`;  
-    }  
-
-    /* =========================================================  
-       SERVICE CATALOGUE (सेवांची यादी व दर)  
-    ========================================================= */  
-    window.onServiceSelect = function(val) {  
-      const sel = $("serviceCatalogue");  
-      const opt = sel.options[sel.selectedIndex];  
-      if (!val) return;  
-      $("jobTitle").value = opt.getAttribute("data-title") || "";  
-      $("jobTotal").value = opt.getAttribute("data-price") || 0;  
-    };  
-
-    /* =========================================================  
-       PUBLIC TRACKING (लॉगिनशिवाय ट्रॅकिंग)  
-    ========================================================= */  
-    window.trackJobPublic = async function() {  
-      const input = $("publicTrackInput").value.trim();  
-      const resultBox = $("publicTrackResult");  
-      if (!input) {  
-        showMessage("कृपया Job No. किंवा मोबाईल नंबर टाका.", "error");  
-        return;  
-      }  
-
-      resultBox.innerHTML = "<p>⏳ शोधत आहे...</p>";  
-      resultBox.style.display = "block";  
-
-      try {  
-        let matchedJobs = [];  
-        const customersSnap = await getDocs(collection(db, "customers"));  
-
-        for (const cDoc of customersSnap.docs) {  
-          const cData = cDoc.data();  
-          const isPhoneMatch = cData.phone === input;  
-
-          const jobsSnap = await getDocs(collection(db, "customers", cDoc.id, "jobs"));  
-          jobsSnap.forEach(jDoc => {  
-            const jData = jDoc.data();  
-            if (isPhoneMatch || (jData.jobNumber && jData.jobNumber.toLowerCase() === input.toLowerCase()) || jDoc.id === input) {  
-              matchedJobs.push({ id: jDoc.id, customerName: cData.name, ...jData });  
-            }  
-          });  
-        }  
-
-        if (!matchedJobs.length) {  
-          resultBox.innerHTML = "<div class='empty'>कोणताही Job सापडला नाही. कृपया बरोबर Job No. किंवा मोबाईल नंबर टाका.</div>";  
-          return;  
-        }  
-
-        let html = `<h3>🔍 शोध निकाल (${matchedJobs.length})</h3>`;  
-        matchedJobs.forEach(job => {  
-          const total = Number(job.totalAmount || 0);  
-          const paid = Number(job.paidAmount || 0);  
-          const bal = Math.max(total - paid, 0);  
-          html += `  
-            <div class="job-card" style="margin-top:10px;">  
-              <div class="job-head">  
-                <div>  
-                  <div class="job-id">JOB #${escapeHTML(job.jobNumber || job.id)}</div>  
-                  <h3>${escapeHTML(job.title || "सेवा")}</h3>  
-                  <small>ग्राहक: ${escapeHTML(job.customerName || "-")}</small>  
-                </div>  
-                <span class="status ${statusClass(job.status)}">${statusText(job.status)}</span>  
-              </div>  
-              <div class="job-details">  
-                <div><small>एकूण</small><strong>${money(total)}</strong></div>  
-                <div><small>जमा</small><strong>${money(paid)}</strong></div>  
-                <div><small>बाकी</small><strong class="${bal > 0 ? 'balance-red':'balance-green'}">${money(bal)}</strong></div>  
-                <div><small>दिनांक</small><strong>${formatDate(job.createdAt)}</strong></div>  
-              </div>  
-            </div>  
-          `;  
-        });  
-        resultBox.innerHTML = html;  
-      } catch (err) {  
-        resultBox.innerHTML = "<p style='color:red;'>माहिती आणताना त्रुटी आली: " + err.message + "</p>";  
-      }  
-    };  
-
-    /* =========================================================  
-       AUTH HANDLERS  
-    ========================================================= */  
-    $("loginForm").addEventListener("submit", async e => {  
-      e.preventDefault();  
-      const email = $("loginEmail").value.trim();  
-      const password = $("loginPassword").value;  
-      try {  
-        await signInWithEmailAndPassword(auth, email, password);  
-        showMessage("Login यशस्वी.");  
-      } catch (error) {  
-        showMessage(firebaseError(error), "error");  
-      }  
-    });  
-
-    $("registerForm").addEventListener("submit", async e => {  
-      e.preventDefault();  
-      const name = $("registerName").value.trim();  
-      const phone = $("registerPhone").value.trim();  
-      const email = $("registerEmail").value.trim();  
-      const password = $("registerPassword").value;  
-
-      if (name.length < 2) {  
-        showMessage("कृपया नाव भरा.", "error");  
-        return;  
-      }  
-      if (!/^[0-9]{10}$/.test(phone)) {  
-        showMessage("कृपया 10 अंकी मोबाईल नंबर भरा.", "error");  
-        return;  
-      }  
-
-      try {  
-        const credential = await createUserWithEmailAndPassword(auth, email, password);  
-        const user = credential.user;  
-
-        await setDoc(doc(db, "customers", user.uid), {  
-          name,  
-          phone,  
-          email,  
-          address: "",  
-          details: "",  
-          createdAt: serverTimestamp(),  
-          updatedAt: serverTimestamp()  
-        });  
-
-        await sendEmailVerification(user);  
-        showMessage("Registration यशस्वी. Verification link पाठवली आहे.");  
-        $("registerForm").reset();  
-      } catch (error) {  
-        showMessage(firebaseError(error), "error");  
-      }  
-    });  
-
-    $("resetPasswordBtn").addEventListener("click", async () => {  
-      const email = prompt("तुमचा Registered Email Address टाका:");  
-      if (!email) return;  
-      try {  
-        await sendPasswordResetEmail(auth, email.trim());  
-        showMessage("Password reset link तुमच्या ई-मेलवर पाठवली आहे.");  
-      } catch (error) {  
-        showMessage(firebaseError(error), "error");  
-      }  
-    });  
-
-    $("logoutBtn").addEventListener("click", async () => {  
-      await signOut(auth);  
-      location.reload();  
-    });  
-
-    onAuthStateChanged(auth, async user => {  
-      currentUser = user;  
-      populateShopInfo();  
-
-      if (!user) {  
-        $("authSection").style.display = "block";  
-        $("customerSection").style.display = "none";  
-        $("adminSection").style.display = "none";  
-        $("topBar").style.display = "none";  
-        return;  
-      }  
-
-      $("authSection").style.display = "none";  
-      $("topBar").style.display = "flex";  
-      await loadUserData(user);  
-    });  
-
-    async function loadUserData(user) {  
-      try {  
-        const adminSnap = await getDoc(doc(db, "admins", user.uid));  
-        isAdmin = adminSnap.exists();  
-
-        const customerSnap = await getDoc(doc(db, "customers", user.uid));  
-        if (customerSnap.exists()) {  
-          currentCustomer = { id: user.uid, ...customerSnap.data() };  
-        } else {  
-          currentCustomer = {  
-            id: user.uid,  
-            name: user.email?.split("@")[0] || "",  
-            email: user.email || "",  
-            phone: "",  
-            address: "",  
-            details: ""  
-          };  
-          await setDoc(doc(db, "customers", user.uid), {  
-            ...currentCustomer,  
-            createdAt: serverTimestamp(),  
-            updatedAt: serverTimestamp()  
-          }, { merge: true });  
-        }  
-
-        $("userEmail").innerText = user.email || "";  
-
-        if (isAdmin) {  
-          $("adminBtn").style.display = "inline-block";  
-          showAdmin();  
-        } else {  
-          $("adminBtn").style.display = "none";  
-          showCustomer();  
-        }  
-      } catch (error) {  
-        console.error(error);  
-        showMessage(firebaseError(error), "error");  
-      }  
-    }  
-
-    function showCustomer() {  
-      $("customerSection").style.display = "block";  
-      $("adminSection").style.display = "none";  
-      renderCustomerProfile();  
-      listenCustomerJobs();  
-      loadCustomerDocuments();  
-    }  
-
-    function showAdmin() {  
-      $("customerSection").style.display = "none";  
-      $("adminSection").style.display = "block";  
-      loadAdminCustomers();  
-    }  
-
-    $("adminBtn").addEventListener("click", () => { if (isAdmin) showAdmin(); });  
-    $("customerBtn").addEventListener("click", () => showCustomer());  
-
-    function renderCustomerProfile() {  
-      if (!currentCustomer) return;  
-      $("profileName").value = currentCustomer.name || "";  
-      $("profilePhone").value = currentCustomer.phone || "";  
-      $("profileAddress").value = currentCustomer.address || "";  
-      $("profileDetails").value = currentCustomer.details || "";  
-      $("profileEmail").value = currentCustomer.email || currentUser?.email || "";  
-    }  
-
-    $("profileForm").addEventListener("submit", async e => {  
-      e.preventDefault();  
-      if (!currentUser) return;  
-      const name = $("profileName").value.trim();  
-      const phone = $("profilePhone").value.trim();  
-      if (!/^[0-9]{10}$/.test(phone)) {  
-        showMessage("कृपया योग्य 10 अंकी मोबाईल नंबर भरा.", "error");  
-        return;  
-      }  
-
-      try {  
-        await updateDoc(doc(db, "customers", currentUser.uid), {  
-          name,  
-          phone,  
-          address: $("profileAddress").value.trim(),  
-          details: $("profileDetails").value.trim(),  
-          updatedAt: serverTimestamp()  
-        });  
-        currentCustomer.name = name;  
-        currentCustomer.phone = phone;  
-        showMessage("Profile update झाली.");  
-      } catch (error) {  
-        showMessage(firebaseError(error), "error");  
-      }  
-    });  
-
-    function listenCustomerJobs() {  
-      if (unsubscribeJobs) unsubscribeJobs();  
-      const jobsRef = collection(db, "customers", currentUser.uid, "jobs");  
-      unsubscribeJobs = onSnapshot(jobsRef, snapshot => {  
-        const jobs = [];  
-        snapshot.forEach(item => {  
-          const jobData = { id: item.id, ...item.data() };  
-          jobs.push(jobData);  
-          jobsStore.set(item.id, jobData);  
-        });  
-        jobs.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));  
-        renderCustomerJobs(jobs);  
-      }, error => {  
-        showMessage(firebaseError(error), "error");  
-      });  
-    }  
-
-    function renderCustomerJobs(jobs) {  
-      const container = $("customerJobs");  
-      container.innerHTML = "";  
-
-      if (!jobs.length) {  
-        container.innerHTML = `  
-          <div class="empty">  
-            <div class="empty-icon">📋</div>  
-            <h3>अजून कोणतेही Job नाही</h3>  
-            <p>तुमच्या कामाची माहिती येथे दिसेल.</p>  
-          </div>  
-        `;  
-        return;  
-      }  
-
-      jobs.forEach(job => {  
-        const total = Number(job.totalAmount || 0);  
-        const paid = Number(job.paidAmount || 0);  
-        const balance = Math.max(total - paid, 0);  
-
-        const card = document.createElement("div");  
-        card.className = "job-card";  
-        card.innerHTML = `  
-          <div class="job-head">  
-            <div>  
-              <div class="job-id">JOB #${escapeHTML(job.jobNumber || job.id.slice(0, 8))}</div>  
-              <h3>${escapeHTML(job.title || "Service Job")}</h3>  
-            </div>  
-            <span class="status ${statusClass(job.status)}">${statusText(job.status)}</span>  
-          </div>  
-
-          <div class="job-details">  
-            <div><small>कामाचे विवरण</small><strong>${escapeHTML(job.details || "-")}</strong></div>  
-            <div><small>एकूण</small><strong>${money(total)}</strong></div>  
-            <div><small>जमा</small><strong>${money(paid)}</strong></div>  
-            <div><small>बाकी</small><strong class="${balance > 0 ? "balance-red" : "balance-green"}">${money(balance)}</strong></div>  
-          </div>  
-
-          <div class="payment-line">  
-            <span>💳 ${paymentText(paymentStatus(total, paid))}</span>  
-            <span>📅 ${formatDate(job.createdAt)}</span>  
-          </div>  
-
-          <div class="job-actions">  
-            <button class="btn primary" onclick="openJobById('${job.id}')">👁️ Job पाहा</button>  
-            <button class="btn" onclick="printJobCardById('${job.id}')">🖨️ Job Card (QR)</button>  
-            <button class="btn" onclick="printInvoiceById('${job.id}')">🧾 Invoice</button>  
-            <button class="btn" onclick="printThermalReceiptById('${job.id}')">🧾 Thermal पावती</button>  
-            <button class="btn whatsapp" onclick="openWhatsAppForJobById('${job.id}')">💬 WhatsApp</button>  
-            ${balance > 0 ? `<button class="btn upi" onclick="showUPIById('${job.id}')">📲 UPI Pay</button>` : ""}  
-          </div>  
-        `;  
-        container.appendChild(card);  
-      });  
-    }  
-
-    window.openJobById = function(jobId) {  
-      const job = jobsStore.get(jobId);  
-      if (job) showJobModal(job);  
-    };  
-
-    function showJobModal(job) {  
-      const total = Number(job.totalAmount || 0);  
-      const paid = Number(job.paidAmount || 0);  
-      const balance = Math.max(total - paid, 0);  
-
-      $("modalContent").innerHTML = `  
-        <div class="modal-job">  
-          <div class="invoice-brand">  
-            <div class="brand-logo">SK</div>  
-            <div>  
-              <h2>${SHOP.name}</h2>  
-              <p>${SHOP.address}</p>  
-              <p>📞 ${SHOP.phone}</p>  
-            </div>  
-          </div>  
-          <hr>  
-          <h2>${escapeHTML(job.title || "Job Details")}</h2>  
-
-          <div class="info-grid">  
-            <div><label>Job Number</label><strong>${escapeHTML(job.jobNumber || job.id)}</strong></div>  
-            <div><label>दिनांक</label><strong>${formatDate(job.createdAt)}</strong></div>  
-            <div><label>स्थिती</label><strong>${statusText(job.status)}</strong></div>  
-            <div><label>Payment</label><strong>${paymentText(paymentStatus(total, paid))}</strong></div>  
-          </div>  
-
-          <div class="description-box">  
-            <b>कामाचे विवरण:</b><br>${escapeHTML(job.details || "-")}  
-          </div>  
-
-          <div class="amount-box">  
-            <div><span>एकूण रक्कम</span><strong>${money(total)}</strong></div>  
-            <div><span>जमा</span><strong>${money(paid)}</strong></div>  
-            <div class="balance-row"><span>बाकी</span><strong>${money(balance)}</strong></div>  
-          </div>  
-
-          ${job.adminNotes ? `  
-            <div class="notes-box">  
-              <strong>Admin Note:</strong><p>${escapeHTML(job.adminNotes)}</p>  
-            </div>  
-          ` : ""}  
-        </div>  
-      `;  
-      $("jobModal").style.display = "flex";  
-    }  
-
-    $("closeModal").addEventListener("click", () => $("jobModal").style.display = "none");  
-
-    /* =========================================================  
-       WHATSAPP AUTOMATIONS (१-क्लिक स्वयंचलित नोटिफिकेशन्स)  
-    ========================================================= */  
-    window.openWhatsApp = function(message = "") {  
-      const text = message || `नमस्कार ${SHOP.name}, मला आपल्या सेवेसंदर्भात माहिती हवी आहे.`;  
-      window.open(`https://wa.me/${SHOP.whatsapp}?text=${encodeURIComponent(text)}`, "_blank");  
-    };  
-
-    window.openWhatsAppForJobById = function(jobId) {  
-      const job = jobsStore.get(jobId);  
-      if (!job) return;  
-      const name = currentCustomer?.name || "ग्राहक";  
-      const total = Number(job.totalAmount || 0);  
-      const paid = Number(job.paidAmount || 0);  
-      const balance = Math.max(total - paid, 0);  
-
-      const message = `नमस्कार ${SHOP.name},\n\nग्राहक: ${name}\nJob: ${job.title || "-"}\nJob No: ${job.jobNumber || job.id}\nस्थिती: ${statusText(job.status)}\n\nएकूण: ${money(total)}\nजमा: ${money(paid)}\nबाकी: ${money(balance)}\n\nधन्यवाद!`;  
-      openWhatsApp(message);  
-    };  
-
-    // काम पूर्ण झाल्याचा WhatsApp मेसेज  
-    window.sendJobCompletedWhatsApp = function(jobId) {  
-      const job = jobsStore.get(jobId);  
-      if (!job) return;  
-      const customer = customersStore.get(job.customerId) || {};  
-      const phone = String(customer.phone || "").replace(/\D/g, "");  
-      const balance = Math.max(Number(job.totalAmount || 0) - Number(job.paidAmount || 0), 0);  
-
-      const msg = `नमस्कार ${customer.name || "ग्राहक"},\n\nआनंदाची बातमी! आपले काम पूर्ण झाले आहे. ✅\n\nकामाचे नाव: ${job.title}\nJob No: ${job.jobNumber || job.id}\nबाकी रक्कम: ${money(balance)}\n\nकृपया SK COMPUTER दुकानात येऊन आपली कागदपत्रे घेऊन जावीत.\n\nपत्ता: ${SHOP.address}\n📞 ${SHOP.phone}`;  
-
-      if (phone.length === 10) {  
-        window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(msg)}`, "_blank");  
-      } else {  
-        alert("ग्राहकाचा १० अंकी फोन नंबर उपलब्ध नाही.");  
-      }  
-    };  
-
-    /* =========================================================  
-       UPI PAYMENTS  
-    ========================================================= */  
-    window.showUPIById = function(jobId) {  
-      const job = jobsStore.get(jobId);  
-      if (!job) return;  
-
-      const total = Number(job.totalAmount || 0);  
-      const paid = Number(job.paidAmount || 0);  
-      const balance = Math.max(total - paid, 0);  
-      const amount = balance > 0 ? balance : total;  
-
-      const upiURL = `upi://pay?pa=${encodeURIComponent(SHOP.upi)}&pn=${encodeURIComponent(SHOP.name)}&am=${encodeURIComponent(amount.toFixed(2))}&cu=INR&tn=${encodeURIComponent("SK COMPUTER Job " + (job.jobNumber || job.id))}`;  
-
-      $("upiContent").innerHTML = `  
-        <div class="upi-card">  
-          <h2>📲 UPI Payment</h2>  
-          <p><strong>${SHOP.name}</strong></p>  
-          <div id="upiQR"></div>  
-          <div class="upi-details">  
-            <p><b>UPI ID:</b><br>${SHOP.upi}</p>  
-            <p><b>रक्कम:</b><br>${money(amount)}</p>  
-          </div>  
-          <a class="btn upi big" href="${upiURL}">📲 UPI App ने Pay करा</a>  
-          <button class="btn" onclick="copyUPI()">📋 UPI ID Copy</button>  
-        </div>  
-      `;  
-
-      $("upiModal").style.display = "flex";  
-      setTimeout(() => {  
-        const qr = $("upiQR");  
-        if (!qr) return;  
-        qr.innerHTML = "";  
-        new QRCode(qr, { text: upiURL, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.H });  
-      }, 100);  
-    };  
-
-    window.copyUPI = async function() {  
-      try {  
-        await navigator.clipboard.writeText(SHOP.upi);  
-        showMessage("UPI ID कॉपी झाली.");  
-      } catch {  
-        showMessage("UPI ID: " + SHOP.upi);  
-      }  
-    };  
-
-    $("closeUPI").addEventListener("click", () => $("upiModal").style.display = "none");  
-
-    /* =========================================================  
-       PRINTING: INVOICE, JOB CARD (WITH QR), & THERMAL SLIP  
-    ========================================================= */  
-    window.printInvoiceById = function(jobId) {  
-      const job = jobsStore.get(jobId);  
-      if (!job) return;  
-      generatePrintInvoice(job, currentCustomer || customersStore.get(job.customerId) || {});  
-    };  
-
-    window.printJobCardById = function(jobId) {  
-      const job = jobsStore.get(jobId);  
-      if (!job) return;  
-      generatePrintJobCard(job, currentCustomer || customersStore.get(job.customerId) || {});  
-    };  
-
-    window.printThermalReceiptById = function(jobId) {  
-      const job = jobsStore.get(jobId);  
-      if (!job) return;  
-      generateThermalReceipt(job, currentCustomer || customersStore.get(job.customerId) || {});  
-    };  
-
-    function generatePrintInvoice(job, customer) {  
-      const total = Number(job.totalAmount || 0);  
-      const paid = Number(job.paidAmount || 0);  
-      const balance = Math.max(total - paid, 0);  
-
-      const win = window.open("", "_blank");  
-      win.document.write(`  
-        <!DOCTYPE html>  
-        <html lang="mr">  
-        <head>  
-          <meta charset="UTF-8">  
-          <title>Invoice - ${SHOP.name}</title>  
-          <style>  
-            body { font-family: Arial, sans-serif; padding: 30px; color: #111; }  
-            .invoice { max-width: 800px; margin: auto; border: 2px solid #111; padding: 25px; }  
-            .header { text-align: center; }  
-            hr { border: none; border-top: 1px solid #aaa; margin: 15px 0; }  
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }  
-            td, th { border: 1px solid #555; padding: 10px; text-align: left; }  
-            .amount { text-align: right; font-size: 18px; }  
-            .balance { font-size: 22px; font-weight: bold; }  
-            .footer { margin-top: 40px; text-align: center; }  
-          </style>  
-        </head>  
-        <body>  
-          <div class="invoice">  
-            <div class="header">  
-              <h1>${SHOP.name}</h1>  
-              <p>${SHOP.address}</p>  
-              <p>मोबाईल: ${SHOP.phone} | UPI: ${SHOP.upi}</p>  
-              <h2>पावती / INVOICE</h2>  
-            </div>  
-            <hr>  
-            <div>  
-              <h3>ग्राहक माहिती</h3>  
-              <p><b>नाव:</b> ${escapeHTML(customer.name || "-")}</p>  
-              <p><b>मोबाईल:</b> ${escapeHTML(customer.phone || "-")}</p>  
-              <p><b>पत्ता:</b> ${escapeHTML(customer.address || "-")}</p>  
-            </div>  
-            <div>  
-              <h3>कामाची माहिती</h3>  
-              <table>  
-                <tr><th>Job No.</th><td>${escapeHTML(job.jobNumber || job.id)}</td></tr>  
-                <tr><th>काम</th><td>${escapeHTML(job.title || "-")}</td></tr>  
-                <tr><th>विवरण</th><td>${escapeHTML(job.details || "-")}</td></tr>  
-                <tr><th>स्थिती</th><td>${statusText(job.status)}</td></tr>  
-                <tr><th>दिनांक</th><td>${formatDate(job.createdAt)}</td></tr>  
-              </table>  
-            </div>  
-            <table>  
-              <tr><th>एकूण रक्कम</th><td class="amount">${money(total)}</td></tr>  
-              <tr><th>जमा रक्कम</th><td class="amount">${money(paid)}</td></tr>  
-              <tr><th>बाकी रक्कम</th><td class="amount balance">${money(balance)}</td></tr>  
-            </table>  
-            <div class="footer">  
-              <p>धन्यवाद! पुन्हा भेट द्या.</p>  
-              <p><strong>${SHOP.name}</strong> (${SHOP.phone})</p>  
-            </div>  
-          </div>  
-          \x3cscript>window.onload = () => window.print();\x3c/script>  
-        </body>  
-        </html>  
-      `);  
-      win.document.close();  
-    }  
-
-    // QR कोडसह Job Card  
-    function generatePrintJobCard(job, customer) {  
-      const win = window.open("", "_blank");  
-      const trackURL = `JOB:${job.jobNumber || job.id} | ${SHOP.name}`;  
-      win.document.write(`  
-        <!DOCTYPE html>  
-        <html lang="mr">  
-        <head>  
-          <meta charset="UTF-8">  
-          <title>Job Card - ${SHOP.name}</title>  
-          \x3cscript src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js">\x3c/script>  
-          <style>  
-            body { font-family: Arial, sans-serif; padding: 25px; }  
-            .card { max-width: 800px; margin: auto; border: 2px solid #111; padding: 25px; position:relative; }  
-            .header { text-align: center; border-bottom: 2px solid #111; padding-bottom: 15px; }  
-            .row { display: grid; grid-template-columns: 180px 1fr; border-bottom: 1px solid #ccc; }  
-            .row div { padding: 9px; }  
-            .label { font-weight: bold; background: #f2f2f2; }  
-            .signature { margin-top: 60px; display: flex; justify-content: space-between; }  
-            #qrBox { position: absolute; right: 25px; top: 25px; text-align: center; }  
-          </style>  
-        </head>  
-        <body>  
-          <div class="card">  
-            <div id="qrBox"><div id="qrCodeContainer"></div><small>Scan Job</small></div>  
-            <div class="header">  
-              <h1>${SHOP.name}</h1>  
-              <p>${SHOP.address} | 📞 ${SHOP.phone}</p>  
-              <h2>JOB CARD</h2>  
-            </div>  
-            <br>  
-            <div class="row"><div class="label">Job Number</div><div><b>${escapeHTML(job.jobNumber || job.id)}</b></div></div>  
-            <div class="row"><div class="label">ग्राहकाचे नाव</div><div>${escapeHTML(customer.name || "-")}</div></div>  
-            <div class="row"><div class="label">मोबाईल</div><div>${escapeHTML(customer.phone || "-")}</div></div>  
-            <div class="row"><div class="label">काम</div><div>${escapeHTML(job.title || "-")}</div></div>  
-            <div class="row"><div class="label">विवरण</div><div>${escapeHTML(job.details || "-")}</div></div>  
-            <div class="row"><div class="label">स्थिती</div><div>${statusText(job.status)}</div></div>  
-            <div class="row"><div class="label">एकूण रक्कम</div><div>${money(job.totalAmount)}</div></div>  
-            <div class="row"><div class="label">जमा रक्कम</div><div>${money(job.paidAmount)}</div></div>  
-            <div class="row"><div class="label">बाकी रक्कम</div><div><b>${money(Math.max(Number(job.totalAmount || 0) - Number(job.paidAmount || 0), 0))}</b></div></div>  
-            <div class="row"><div class="label">दिनांक</div><div>${formatDate(job.createdAt)}</div></div>  
-            <div class="signature">  
-              <div>ग्राहकाची सही</div>  
-              <div>${SHOP.name}<br>अधिकृत सही</div>  
-            </div>  
-          </div>  
-          \x3cscript>  
-            window.onload = () => {  
-              new QRCode(document.getElementById("qrCodeContainer"), {  
-                text: "${trackURL}",  
-                width: 90, height: 90  
-              });  
-              setTimeout(() => window.print(), 500);  
-            };  
-          \x3c/script>  
-        </body>  
-        </html>  
-      `);  
-      win.document.close();  
-    }  
-
-    // थर्मल प्रिंटर स्लिप (80mm Thermal Receipt)  
-    function generateThermalReceipt(job, customer) {  
-      const win = window.open("", "_blank");  
-      const total = Number(job.totalAmount || 0);  
-      const paid = Number(job.paidAmount || 0);  
-      const balance = Math.max(total - paid, 0);  
-
-      win.document.write(`  
-        <!DOCTYPE html>  
-        <html>  
-        <head>  
-          <meta charset="UTF-8">  
-          <title>Receipt - ${job.jobNumber || job.id}</title>  
-          <style>  
-            @page { size: 80mm auto; margin: 0; }  
-            body { font-family: monospace; width: 72mm; margin: auto; padding: 10px 0; font-size: 12px; color:#000; }  
-            .text-center { text-align: center; }  
-            .divider { border-top: 1px dashed #000; margin: 5px 0; }  
-            .flex-between { display: flex; justify-content: space-between; }  
-            b { font-weight: bold; }  
-          </style>  
-        </head>  
-        <body>  
-          <div class="text-center">  
-            <h3 style="margin:2px 0;">${SHOP.name}</h3>  
-            <p style="margin:2px 0; font-size:10px;">${SHOP.address}</p>  
-            <p style="margin:2px 0;">मो: ${SHOP.phone}</p>  
-          </div>  
-          <div class="divider"></div>  
-          <div class="flex-between"><span>Job:</span><b>#${escapeHTML(job.jobNumber || job.id)}</b></div>  
-          <div class="flex-between"><span>दिनांक:</span><span>${formatDate(job.createdAt)}</span></div>  
-          <div class="flex-between"><span>ग्राहक:</span><span>${escapeHTML(customer.name || "-")}</span></div>  
-          <div class="flex-between"><span>मोबाईल:</span><span>${escapeHTML(customer.phone || "-")}</span></div>  
-          <div class="divider"></div>  
-          <div><b>काम:</b> ${escapeHTML(job.title || "-")}</div>  
-          <div><b>स्थिती:</b> ${statusText(job.status)}</div>  
-          <div class="divider"></div>  
-          <div class="flex-between"><span>एकूण:</span><span>${money(total)}</span></div>  
-          <div class="flex-between"><span>जमा:</span><span>${money(paid)}</span></div>  
-          <div class="flex-between" style="font-size:14px;"><span><b>बाकी:</b></span><span><b>${money(balance)}</b></span></div>  
-          <div class="divider"></div>  
-          <div class="text-center">  
-            <p style="margin:3px 0;">UPI: ${SHOP.upi}</p>  
-            <p style="margin:3px 0;">धन्यवाद! पुन्हा भेट द्या.</p>  
-          </div>  
-          \x3cscript>window.onload = () => window.print();\x3c/script>  
-        </body>  
-        </html>  
-      `);  
-      win.document.close();  
-    }  
-
-    /* =========================================================  
-       ADMIN - CUSTOMERS, DAYBOOK & STATS  
-    ========================================================= */  
-    async function loadAdminCustomers() {  
-      if (!isAdmin) return;  
-      if (unsubscribeCustomers) unsubscribeCustomers();  
-
-      const customersRef = collection(db, "customers");  
-      unsubscribeCustomers = onSnapshot(customersRef, snapshot => {  
-        customersCache = [];  
-        customersStore.clear();  
-
-        snapshot.forEach(item => {  
-          const cust = { id: item.id, ...item.data() };  
-          customersCache.push(cust);  
-          customersStore.set(item.id, cust);  
-        });  
-
-        if ($("totalCustomers")) $("totalCustomers").innerText = customersCache.length;  
-        renderAdminCustomers();  
-      }, error => {  
-        showMessage(firebaseError(error), "error");  
-      });  
-    }  
-
-    function renderAdminCustomers() {  
-      const search = $("customerSearch").value.trim().toLowerCase();  
-      const list = $("adminCustomerList");  
-      list.innerHTML = "";  
-
-      let customers = customersCache.filter(customer => {  
-        const text = `${customer.name || ""} ${customer.phone || ""} ${customer.email || ""}`.toLowerCase();  
-        return text.includes(search);  
-      });  
-
-      if (!customers.length) {  
-        list.innerHTML = `<div class="empty">कोणताही ग्राहक सापडला नाही.</div>`;  
-        return;  
-      }  
-
-      customers.forEach(customer => {  
-        const div = document.createElement("div");  
-        div.className = "customer-admin-card";  
-        div.innerHTML = `  
-          <div class="customer-main">  
-            <div class="avatar">${escapeHTML((customer.name || "G").charAt(0).toUpperCase())}</div>  
-            <div>  
-              <h3>${escapeHTML(customer.name || "-")}</h3>  
-              <p>📞 ${escapeHTML(customer.phone || "-")}</p>  
-              <p>✉️ ${escapeHTML(customer.email || "-")}</p>  
-            </div>  
-          </div>  
-          <div class="customer-actions">  
-            <button class="btn primary" onclick="selectAdminCustomer('${customer.id}')">👁️ उघडा</button>  
-            <button class="btn whatsapp" onclick="openWhatsApp('नमस्कार ${customer.name || "ग्राहक"}, SK COMPUTER मधून संपर्क करत आहोत.')">💬 WhatsApp</button>  
-          </div>  
-        `;  
-        list.appendChild(div);  
-      });  
-    }  
-
-    $("customerSearch").addEventListener("input", renderAdminCustomers);  
-
-    window.selectAdminCustomer = async function(uid) {  
-      const customer = customersStore.get(uid);  
-      if (!customer) return;  
-
-      currentSelectedCustUid = uid;  
-      $("adminCustomerArea").style.display = "block";  
-      $("adminCustomerName").innerText = customer.name || "-";  
-      $("adminCustomerPhone").innerText = customer.phone || "-";  
-      $("adminCustomerEmail").innerText = customer.email || "-";  
-      $("adminCustomerAddress").innerText = customer.address || "-";  
-      $("newJobCustomerId").value = uid;  
-
-      await Promise.all([  
-        loadAdminJobs(uid),  
-        loadAdminDocuments(uid)  
-      ]);  
-
-      window.scrollTo({  
-        top: $("adminCustomerArea").offsetTop - 20,  
-        behavior: "smooth"  
-      });  
-    };  
-
-    async function loadAdminJobs(uid) {  
-      if (unsubscribeAdminJobs) unsubscribeAdminJobs();  
-      const jobsRef = collection(db, "customers", uid, "jobs");  
-      unsubscribeAdminJobs = onSnapshot(jobsRef, snapshot => {  
-        currentAdminCustomerJobs = [];  
-        snapshot.forEach(item => {  
-          const jobData = { id: item.id, customerId: uid, ...item.data() };  
-          currentAdminCustomerJobs.push(jobData);  
-          jobsStore.set(item.id, jobData);  
-        });  
-
-        currentAdminCustomerJobs.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));  
-        filterAdminJobs();  
-      });  
-    }  
-
-    window.filterAdminJobs = function() {  
-      const statusFilter = $("filterStatus").value;  
-      let filtered = currentAdminCustomerJobs;  
-      if (statusFilter !== "All") {  
-        filtered = currentAdminCustomerJobs.filter(j => j.status === statusFilter);  
-      }  
-      renderAdminJobs(filtered);  
-    };  
-
-    function renderAdminJobs(jobs) {  
-      const box = $("adminJobs");  
-      box.innerHTML = "";  
-
-      if (!jobs.length) {  
-        box.innerHTML = `<div class="empty">कोणताही Job सापडला नाही.</div>`;  
-        return;  
-      }  
-
-      jobs.forEach(job => {  
-        const total = Number(job.totalAmount || 0);  
-        const paid = Number(job.paidAmount || 0);  
-        const balance = Math.max(total - paid, 0);  
-
-        const div = document.createElement("div");  
-        div.className = "admin-job";  
-        div.innerHTML = `  
-          <div class="admin-job-top">  
-            <div>  
-              <strong>${escapeHTML(job.jobNumber || job.id)}</strong>  
-              <h3>${escapeHTML(job.title || "-")}</h3>  
-            </div>  
-            <span class="status ${statusClass(job.status)}">${statusText(job.status)}</span>  
-          </div>  
-          <p>${escapeHTML(job.details || "-")}</p>  
-          <div class="admin-money">  
-            <span>Total: <b>${money(total)}</b></span>  
-            <span>Paid: <b>${money(paid)}</b></span>  
-            <span>Balance: <b>${money(balance)}</b></span>  
-          </div>  
-          <div class="job-actions">  
-            <button class="btn" onclick="editJobById('${job.id}')">✏️ Edit</button>  
-            <button class="btn" onclick="recordPaymentById('${job.id}')">💰 Payment</button>  
-            <button class="btn" onclick="viewPayments('${job.customerId}', '${job.id}')">📜 History</button>  
-            <button class="btn" onclick="printJobCardById('${job.id}')">🖨️ Job Card (QR)</button>  
-            <button class="btn" onclick="printInvoiceById('${job.id}')">🧾 Invoice</button>  
-            <button class="btn" onclick="printThermalReceiptById('${job.id}')">🧾 Thermal पावती</button>  
-            <button class="btn whatsapp" onclick="sendJobCompletedWhatsApp('${job.id}')">✅ काम पूर्ण मेसेज</button>  
-          </div>  
-        `;  
-        box.appendChild(div);  
-      });  
-    }  
-
-    // दैनिक गल्ला व हिशोब (Daily Cashbook Summary)  
-    window.showDailyCashbook = async function() {  
-      showMessage("हिशोब तपासत आहे...");  
-      let cashTotal = 0;  
-      let upiTotal = 0;  
-      let totalAmount = 0;  
-
-      const todayStr = new Date().toDateString();  
-
-      try {  
-        for (const cust of customersCache) {  
-          const jobsSnap = await getDocs(collection(db, "customers", cust.id, "jobs"));  
-          for (const jDoc of jobsSnap.docs) {  
-            const paySnap = await getDocs(collection(db, "customers", cust.id, "jobs", jDoc.id, "payments"));  
-            paySnap.forEach(pDoc => {  
-              const pData = pDoc.data();  
-              const pDate = pData.createdAt?.toDate ? pData.createdAt.toDate() : new Date();  
-              if (pDate.toDateString() === todayStr) {  
-                const amt = Number(pData.amount || 0);  
-                if ((pData.method || "").toUpperCase() === "CASH") {  
-                  cashTotal += amt;  
-                } else {  
-                  upiTotal += amt;  
-                }  
-                totalAmount += amt;  
-              }  
-            });  
-          }  
-        }  
-
-        alert(`📊 आजचा दैनिक गल्ला (${new Date().toLocaleDateString('mr-IN')})\n----------------------------\n💵 रोख (Cash): ${money(cashTotal)}\n📲 UPI Payment: ${money(upiTotal)}\n----------------------------\n💰 एकूण जमा: ${money(totalAmount)}`);  
-      } catch (err) {  
-        showMessage("त्रुटी: " + err.message, "error");  
-      }  
-    };  
-
-    /* =========================================================  
-       JOB CREATION, EDIT & PAYMENTS  
-    ========================================================= */  
-    $("newJobForm").addEventListener("submit", async e => {  
-      e.preventDefault();  
-      if (!isAdmin) return;  
-
-      const uid = $("newJobCustomerId").value;  
-      if (!uid) {  
-        showMessage("कृपया ग्राहक निवडा.", "error");  
-        return;  
-      }  
-
-      const title = $("jobTitle").value.trim();  
-      const details = $("jobDetails").value.trim();  
-      const total = Number($("jobTotal").value || 0);  
-
-      if (!title) {  
-        showMessage("कामाचे नाव भरा.", "error");  
-        return;  
-      }  
-
-      try {  
-        const jobsRef = collection(db, "customers", uid, "jobs");  
-        const jobNumber = `SK-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}`;  
-
-        await addDoc(jobsRef, {  
-          jobNumber,  
-          title,  
-          details,  
-          status: $("jobStatus").value || "Pending",  
-          totalAmount: total,  
-          paidAmount: 0,  
-          paymentStatus: paymentStatus(total, 0),  
-          adminNotes: $("jobAdminNotes").value.trim(),  
-          createdAt: serverTimestamp(),  
-          updatedAt: serverTimestamp()  
-        });  
-
-        showMessage(`नवीन Job तयार झाला: ${jobNumber}`);  
-        $("newJobForm").reset();  
-        $("newJobCustomerId").value = uid;  
-
-        // नवीन जॉब तयार झाल्यावर १-क्लिक WhatsApp अलर्ट पाठवण्याचा पर्याय  
-        const cust = customersStore.get(uid);  
-        if (cust && cust.phone) {  
-          if (confirm(`नवीन Job ${jobNumber} ग्राहकाच्या WhatsApp वर पाठवायचा का?`)) {  
-            const msg = `नमस्कार ${cust.name},\nSK COMPUTER मध्ये आपली नोंदणी यशस्वी झाली आहे.\n\nकाम: ${title}\nJob No: ${jobNumber}\nएकूण रक्कम: ${money(total)}\n\nधन्यवाद!\nSK COMPUTER\n${SHOP.phone}`;  
-            window.open(`https://wa.me/91${cust.phone}?text=${encodeURIComponent(msg)}`, "_blank");  
-          }  
-        }  
-      } catch (error) {  
-        showMessage(firebaseError(error), "error");  
-      }  
-    });  
-
-    window.editJobById = function(jobId) {  
-      const job = jobsStore.get(jobId);  
-      if (!job) return;  
-
-      const status = prompt("Status निवडा:\nPending\nProcessing\nCompleted\nCancelled", job.status || "Pending");  
-      if (!status) return;  
-
-      const total = prompt("एकूण रक्कम:", job.totalAmount || 0);  
-      if (total === null) return;  
-
-      const notes = prompt("Admin Note:", job.adminNotes || "");  
-      if (notes === null) return;  
-
-      updateJobData(job, status, Number(total), notes);  
-    };  
-
-    async function updateJobData(job, status, total, notes) {  
-      try {  
-        await updateDoc(doc(db, "customers", job.customerId, "jobs", job.id), {  
-          status,  
-          totalAmount: total,  
-          paymentStatus: paymentStatus(total, Number(job.paidAmount || 0)),  
-          adminNotes: notes,  
-          updatedAt: serverTimestamp()  
-        });  
-        showMessage("Job update झाला.");  
-      } catch (error) {  
-        showMessage(firebaseError(error), "error");  
-      }  
-    }  
-
-    window.recordPaymentById = async function(jobId) {  
-      const job = jobsStore.get(jobId);  
-      if (!job) return;  
-
-      const amount = Number(prompt("जमा होणारी रक्कम:", ""));  
-      if (!amount || amount <= 0) return;  
-
-      const method = prompt("Payment Method (उदा. Cash किंवा UPI):", "UPI") || "UPI";  
-      const note = prompt("Payment Note:", "") || "";  
-
-      try {  
-        const jobRef = doc(db, "customers", job.customerId, "jobs", job.id);  
-
-        await runTransaction(db, async transaction => {  
-          const snap = await transaction.get(jobRef);  
-          if (!snap.exists()) throw new Error("Job सापडला नाही.");  
-
-          const data = snap.data();  
-          const oldPaid = Number(data.paidAmount || 0);  
-          const total = Number(data.totalAmount || 0);  
-          const newPaid = oldPaid + amount;  
-
-          if (newPaid > total) throw new Error("Payment एकूण रकमेपेक्षा जास्त असू शकत नाही.");  
-
-          transaction.update(jobRef, {  
-            paidAmount: newPaid,  
-            paymentStatus: paymentStatus(total, newPaid),  
-            updatedAt: serverTimestamp()  
-          });  
-        });  
-
-        await addDoc(collection(db, "customers", job.customerId, "jobs", job.id, "payments"), {  
-          amount,  
-          method,  
-          note,  
-          createdAt: serverTimestamp(),  
-          createdBy: currentUser.uid  
-        });  
-
-        showMessage("Payment नोंदवले गेले.");  
-
-        // पावती WhatsApp अलर्ट  
-        const cust = customersStore.get(job.customerId);  
-        if (cust && cust.phone && confirm("पेमेंट पावती WhatsApp वर पाठवायची का?")) {  
-          const msg = `नमस्कार ${cust.name},\nSK COMPUTER कडे आपले पेमेंट यशस्वीरित्या जमा झाले आहे.\n\nJob: ${job.title}\nजमा रक्कम: ${money(amount)}\nPayment Method: ${method}\n\nधन्यवाद!`;  
-          window.open(`https://wa.me/91${cust.phone}?text=${encodeURIComponent(msg)}`, "_blank");  
-        }  
-      } catch (error) {  
-        showMessage(error.message || firebaseError(error), "error");  
-      }  
-    };  
-
-    window.viewPayments = async function(uid, jobId) {  
-      try {  
-        const snap = await getDocs(collection(db, "customers", uid, "jobs", jobId, "payments"));  
-        const payments = [];  
-        snap.forEach(item => payments.push({ id: item.id, ...item.data() }));  
-        payments.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));  
-
-        let html = `<h2>💳 Payment History</h2>`;  
-        if (!payments.length) {  
-          html += "<p>Payment history उपलब्ध नाही.</p>";  
-        } else {  
-          html += `  
-            <table class="history-table">  
-              <thead>  
-                <tr>  
-                  <th>दिनांक</th>  
-                  <th>रक्कम</th>  
-                  <th>Method</th>  
-                  <th>Note</th>  
-                </tr>  
-              </thead>  
-              <tbody>  
-          `;  
-          payments.forEach(payment => {  
-            html += `  
-              <tr>  
-                <td>${formatDateTime(payment.createdAt)}</td>  
-                <td>${money(payment.amount)}</td>  
-                <td>${escapeHTML(payment.method || "-")}</td>  
-                <td>${escapeHTML(payment.note || "-")}</td>  
-              </tr>  
-            `;  
-          });  
-          html += `</tbody></table>`;  
-        }  
-
-        $("historyContent").innerHTML = html;  
-        $("historyModal").style.display = "flex";  
-      } catch (error) {  
-        showMessage(firebaseError(error), "error");  
-      }  
-    };  
-
-    $("closeHistory").addEventListener("click", () => $("historyModal").style.display = "none");  
-
-    /* =========================================================  
-       DOCUMENTS UPLOAD & RETRIEVAL  
-    ========================================================= */  
-    $("documentUploadForm").addEventListener("submit", async e => {  
-      e.preventDefault();  
-      if (!currentUser) return;  
-
-      const file = $("documentFile").files[0];  
-      if (!file) {  
-        showMessage("कृपया file निवडा.", "error");  
-        return;  
-      }  
-      if (file.size > 10 * 1024 * 1024) {  
-        showMessage("File आकार 10MB पेक्षा कमी असावा.", "error");  
-        return;  
-      }  
-
-      try {  
-        const storagePath = `customerDocuments/${currentUser.uid}/${Date.now()}_${file.name}`;  
-        const storageRef = ref(storage, storagePath);  
-
-        await uploadBytes(storageRef, file);  
-        const url = await getDownloadURL(storageRef);  
-
-        await addDoc(collection(db, "customers", currentUser.uid, "documents"), {  
-          name: file.name,  
-          url,  
-          storagePath,  
-          size: file.size,  
-          contentType: file.type,  
-          createdAt: serverTimestamp()  
-        });  
-
-        showMessage("Document upload झाले.");  
-        $("documentUploadForm").reset();  
-        loadCustomerDocuments();  
-      } catch (error) {  
-        showMessage(firebaseError(error), "error");  
-      }  
-    });  
-
-    async function loadCustomerDocuments() {  
-      if (!currentUser) return;  
-      try {  
-        const snap = await getDocs(collection(db, "customers", currentUser.uid, "documents"));  
-        const box = $("documentsList");  
-        box.innerHTML = "";  
-
-        if (snap.empty) {  
-          box.innerHTML = "<p style='color:var(--text-muted); margin-top:10px;'>कोणतेही कागदपत्र अपलोड केलेले नाही.</p>";  
-          return;  
-        }  
-
-        snap.forEach(item => {  
-          const d = item.data();  
-          const div = document.createElement("div");  
-          div.className = "document-item";  
-          div.innerHTML = `  
-            <div>  
-              📎 <strong>${escapeHTML(d.name || "Document")}</strong>  
-              <small>${formatDateTime(d.createdAt)}</small>  
-            </div>  
-            <a class="btn" href="${d.url}" target="_blank">📥 Open</a>  
-          `;  
-          box.appendChild(div);  
-        });  
-      } catch (error) {  
-        console.error(error);  
-      }  
-    }  
-
-    window.loadAdminDocuments = async function(uid) {  
-      try {  
-        const snap = await getDocs(collection(db, "customers", uid, "documents"));  
-        let html = "<h3>📎 ग्राहकाचे Documents</h3>";  
-
-        if (snap.empty) {  
-          html += "<p style='color:var(--text-muted);'>या ग्राहकाने कोणतेही कागदपत्र अपलोड केलेले नाही.</p>";  
-        } else {  
-          snap.forEach(item => {  
-            const d = item.data();  
-            html += `  
-              <div class="document-item">  
-                <div>📎 <strong>${escapeHTML(d.name || "Document")}</strong><br><small>${formatDateTime(d.createdAt)}</small></div>  
-                <a class="btn primary" href="${d.url}" target="_blank">📥 Open</a>  
-              </div>  
-            `;  
-          });  
-        }  
-        $("adminDocuments").innerHTML = html;  
-      } catch (error) {  
-        showMessage(firebaseError(error), "error");  
-      }  
-    };  
-
-    /* =========================================================  
-       DOM EVENT LISTENERS  
-    ========================================================= */  
-    $("showRegister").addEventListener("click", () => {  
-      $("loginBox").style.display = "none";  
-      $("registerBox").style.display = "block";  
-    });  
-
-    $("showLogin").addEventListener("click", () => {  
-      $("loginBox").style.display = "block";  
-      $("registerBox").style.display = "none";  
-    });  
-
-    $("refreshBtn").addEventListener("click", () => {  
-      if (isAdmin) loadAdminCustomers();  
-      if (!isAdmin && currentUser) {  
-        listenCustomerJobs();  
-        loadCustomerDocuments();  
-      }  
-      showMessage("माहिती रिफ्रेश झाली.");  
-    });  
-
-    window.addEventListener("click", e => {  
-      if (e.target === $("jobModal")) $("jobModal").style.display = "none";  
-      if (e.target === $("upiModal")) $("upiModal").style.display = "none";  
-      if (e.target === $("historyModal")) $("historyModal").style.display = "none";  
-    });  
-  </script>  
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>  
-
-  <style>  
-    :root {  
-      --bg-gradient: linear-gradient(135deg, #eef2ff, #f8fafc);  
-      --bg-card: #ffffff;  
-      --text-main: #172033;  
-      --text-muted: #64748b;  
-      --border-color: #e5e7eb;  
-      --input-bg: #ffffff;  
-      --input-border: #d1d5db;  
-      --sub-card-bg: #f8fafc;  
-    }  
-    [data-theme="dark"] {  
-      --bg-gradient: linear-gradient(135deg, #0f172a, #1e293b);  
-      --bg-card: #1e293b;  
-      --text-main: #f8fafc;  
-      --text-muted: #94a3b8;  
-      --border-color: #334155;  
-      --input-bg: #0f172a;  
-      --input-border: #475569;  
-      --sub-card-bg: #0f172a;  
-    }  
-    * { box-sizing: border-box; }  
-    body {  
-      margin: 0;  
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans Devanagari", Arial, sans-serif;  
-      background: var(--bg-gradient);  
-      color: var(--text-main);  
-      min-height: 100vh;  
-      transition: background 0.3s, color 0.3s;  
-    }  
-    button, input, textarea, select { font: inherit; }  
-    .topbar {  
-      min-height: 70px;  
-      display: flex;  
-      align-items: center;  
-      justify-content: space-between;  
-      padding: 12px 22px;  
-      background: linear-gradient(135deg, #111827, #1e3a8a);  
-      color: white;  
-      position: sticky;  
-      top: 0;  
-      z-index: 100;  
-    }  
-    .brand { display: flex; align-items: center; gap: 12px; }  
-    .logo {  
-      width: 46px;  
-      height: 46px;  
-      border-radius: 12px;  
-      background: linear-gradient(135deg, #ffffff, #dbeafe);  
-      color: #1d4ed8;  
-      display: flex;  
-      align-items: center;  
-      justify-content: center;  
-      font-weight: 900;  
-      font-size: 18px;  
-    }  
-    .brand h1 { margin: 0; font-size: 20px; }  
-    .brand small { opacity: .8; }  
-    .top-actions { display: flex; gap: 7px; align-items: center; }  
-    .btn {  
-      border: 0;  
-      border-radius: 10px;  
-      padding: 10px 14px;  
-      background: #e5e7eb;  
-      color: #111827;  
-      cursor: pointer;  
-      font-weight: 700;  
-      transition: .2s;  
-      text-decoration: none;  
-      display: inline-flex;  
-      align-items: center;  
-      justify-content: center;  
-      gap: 6px;  
-    }  
-    .btn:hover { transform: translateY(-1px); filter: brightness(.97); }  
-    .btn.primary { background: #2563eb; color: white; }  
-    .btn.whatsapp { background: #16a34a; color: white; }  
-    .btn.upi { background: #7c3aed; color: white; }  
-    .btn.danger { background: #dc2626; color: white; }  
-    .btn.big { width: 100%; margin: 10px 0; }  
-    .container { max-width: 1200px; margin: auto; padding: 25px 15px 60px; }  
-    .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }  
-    .auth-card {  
-      width: 100%;  
-      max-width: 460px;  
-      background: var(--bg-card);  
-      border-radius: 22px;  
-      padding: 30px;  
-      box-shadow: 0 20px 60px rgba(0,0,0,.12);  
-    }  
-    .auth-brand { text-align: center; margin-bottom: 25px; }  
-    .auth-brand .logo { margin: auto; width: 70px; height: 70px; font-size: 25px; }  
-    .auth-brand h1 { margin: 12px 0 5px; }  
-    .auth-brand p { margin: 0; color: var(--text-muted); }  
-    .form-group { margin-bottom: 15px; }  
-    .form-group label { display: block; font-weight: 700; margin-bottom: 6px; }  
-    input, textarea, select {  
-      width: 100%;  
-      padding: 12px 13px;  
-      border: 1px solid var(--input-border);  
-      border-radius: 10px;  
-      outline: none;  
-      background: var(--input-bg);  
-      color: var(--text-main);  
-    }  
-    input:focus, textarea:focus, select:focus {  
-      border-color: #2563eb;  
-      box-shadow: 0 0 0 3px rgba(37,99,235,.1);  
-    }  
-    textarea { min-height: 90px; resize: vertical; }  
-    .auth-links { text-align: center; margin-top: 15px; }  
-    .auth-links button { border: 0; background: transparent; color: #2563eb; cursor: pointer; font-weight: 700; }  
-    .message {  
-      display: none;  
-      position: fixed;  
-      top: 80px;  
-      right: 20px;  
-      z-index: 1000;  
-      padding: 13px 18px;  
-      border-radius: 10px;  
-      color: white;  
-      font-weight: 700;  
-      box-shadow: 0 10px 30px rgba(0,0,0,.15);  
-    }  
-    .message.success { background: #16a34a; }  
-    .message.error { background: #dc2626; }  
-    .page-title { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }  
-    .page-title h2 { margin: 0; font-size: 28px; }  
-    .page-title p { margin: 5px 0 0; color: var(--text-muted); }  
-    .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }  
-    .card {  
-      background: var(--bg-card);  
-      border-radius: 18px;  
-      padding: 20px;  
-      box-shadow: 0 10px 30px rgba(15,23,42,.07);  
-      margin-bottom: 18px;  
-      border: 1px solid var(--border-color);  
-    }  
-    .card h3 { margin-top: 0; }  
-    .job-card {  
-      background: var(--bg-card);  
-      border-radius: 18px;  
-      padding: 20px;  
-      margin-bottom: 15px;  
-      box-shadow: 0 8px 25px rgba(15,23,42,.07);  
-      border-left: 5px solid #2563eb;  
-      border-top: 1px solid var(--border-color);  
-      border-right: 1px solid var(--border-color);  
-      border-bottom: 1px solid var(--border-color);  
-    }  
-    .job-head { display: flex; justify-content: space-between; gap: 15px; align-items: flex-start; }  
-    .job-head h3 { margin: 5px 0; }  
-    .job-id { color: var(--text-muted); font-size: 13px; font-weight: 800; }  
-    .status {  
-      display: inline-flex;  
-      padding: 6px 10px;  
-      border-radius: 999px;  
-      font-size: 12px;  
-      font-weight: 800;  
-      white-space: nowrap;  
-    }  
-    .status.pending { background: #fef3c7; color: #92400e; }  
-    .status.processing { background: #dbeafe; color: #1d4ed8; }  
-    .status.completed { background: #dcfce7; color: #166534; }  
-    .status.cancelled { background: #fee2e2; color: #991b1b; }  
-    .job-details { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-top: 18px; }  
-    .job-details div { background: var(--sub-card-bg); border-radius: 10px; padding: 12px; border: 1px solid var(--border-color); }  
-    .job-details small { display: block; color: var(--text-muted); margin-bottom: 4px; }  
-    .balance-red { color: #dc2626; }  
-    .balance-green { color: #16a34a; }  
-    .payment-line { display: flex; justify-content: space-between; margin-top: 15px; color: var(--text-muted); font-size: 14px; }  
-    .job-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }  
-    .stats { display: grid; grid-template-columns: repeat(2,1fr); gap: 15px; margin-bottom: 20px; }  
-    .stat { background: var(--bg-card); padding: 20px; border-radius: 16px; box-shadow: 0 8px 25px rgba(0,0,0,.06); border: 1px solid var(--border-color); }  
-    .stat span { color: var(--text-muted); font-size: 13px; }  
-    .stat strong { display: block; font-size: 24px; margin-top: 5px; }  
-    .customer-admin-card {  
-      background: var(--bg-card);  
-      border-radius: 15px;  
-      padding: 15px;  
-      display: flex;  
-      justify-content: space-between;  
-      align-items: center;  
-      gap: 15px;  
-      margin-bottom: 10px;  
-      border: 1px solid var(--border-color);  
-    }  
-    .customer-main { display: flex; gap: 12px; align-items: center; }  
-    .avatar {  
-      width: 48px;  
-      height: 48px;  
-      border-radius: 50%;  
-      background: #dbeafe;  
-      color: #1d4ed8;  
-      display: flex;  
-      align-items: center;  
-      justify-content: center;  
-      font-weight: 900;  
-      font-size: 18px;  
-    }  
-    .customer-main h3 { margin: 0 0 3px; }  
-    .customer-main p { margin: 2px 0; font-size: 13px; color: var(--text-muted); }  
-    .customer-actions { display: flex; flex-wrap: wrap; gap: 7px; }  
-    .admin-job { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 15px; padding: 17px; margin-bottom: 12px; }  
-    .admin-job-top { display: flex; justify-content: space-between; gap: 10px; }  
-    .admin-job h3 { margin: 5px 0; }  
-    .admin-money { display: flex; gap: 20px; flex-wrap: wrap; background: var(--sub-card-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); }  
-    .modal {  
-      display: none;  
-      position: fixed;  
-      inset: 0;  
-      background: rgba(15,23,42,.65);  
-      z-index: 500;  
-      align-items: center;  
-      justify-content: center;  
-      padding: 15px;  
-    }  
-    .modal-box {  
-      width: 100%;  
-      max-width: 700px;  
-      max-height: 90vh;  
-      overflow: auto;  
-      background: var(--bg-card);  
-      color: var(--text-main);  
-      border-radius: 20px;  
-      padding: 25px;  
-      position: relative;  
-    }  
-    .close {  
-      position: absolute;  
-      right: 15px;  
-      top: 12px;  
-      border: 0;  
-      background: var(--sub-card-bg);  
-      color: var(--text-main);  
-      border-radius: 50%;  
-      width: 38px;  
-      height: 38px;  
-      cursor: pointer;  
-      font-size: 20px;  
-    }  
-    .invoice-brand { display: flex; align-items: center; gap: 15px; }  
-    .brand-logo {  
-      width: 60px;  
-      height: 60px;  
-      border-radius: 15px;  
-      background: #2563eb;  
-      color: white;  
-      display: flex;  
-      align-items: center;  
-      justify-content: center;  
-      font-weight: 900;  
-      font-size: 20px;  
-    }  
-    .invoice-brand h2 { margin: 0; }  
-    .invoice-brand p { margin: 3px 0; color: var(--text-muted); }  
-    .info-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin: 20px 0; }  
-    .info-grid div { background: var(--sub-card-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); }  
-    .info-grid label { display: block; color: var(--text-muted); font-size: 12px; }  
-    .description-box { padding: 15px; border: 1px solid var(--border-color); border-radius: 10px; }  
-    .amount-box { margin-top: 15px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); }  
-    .amount-box div { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid var(--border-color); background: var(--bg-card); }  
-    .amount-box div:last-child { border: 0; }  
-    .balance-row { background: var(--sub-card-bg) !important; font-size: 18px; font-weight: 800; }  
-    .notes-box { background: var(--sub-card-bg); padding: 14px; border-radius: 10px; margin-top: 15px; border: 1px solid var(--border-color); }  
-    .upi-card { text-align: center; }  
-    #upiQR { display: flex; justify-content: center; margin: 20px 0; }  
-    .upi-details { background: var(--sub-card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color); }  
-    .document-item {  
-      display: flex;  
-      justify-content: space-between;  
-      align-items: center;  
-      gap: 10px;  
-      padding: 12px;  
-      border: 1px solid var(--border-color);  
-      border-radius: 10px;  
-      margin-top: 8px;  
-      background: var(--bg-card);  
-    }  
-    .document-item small { display: block; color: var(--text-muted); margin-top: 3px; }  
-    .history-table { width: 100%; border-collapse: collapse; margin-top: 15px; }  
-    .history-table th, .history-table td { border: 1px solid var(--border-color); padding: 9px; text-align: left; background: var(--bg-card); }  
-    .history-table th { background: var(--sub-card-bg); }  
-    .empty { text-align: center; padding: 30px 15px; color: var(--text-muted); background: var(--bg-card); border-radius: 15px; border: 1px solid var(--border-color); }  
-    .empty-icon { font-size: 40px; margin-bottom: 10px; }  
-
-    @media(max-width:800px) {  
-      .grid { grid-template-columns: 1fr; }  
-      .job-details { grid-template-columns: repeat(2,1fr); }  
-      .customer-admin-card { flex-direction: column; align-items: stretch; }  
-      .customer-actions { width: 100%; }  
-      .customer-actions .btn { flex: 1; }  
-      .stats { grid-template-columns: 1fr; }  
-    }  
-    @media(max-width:600px) {  
-      .topbar { padding: 10px; }  
-      .brand h1 { font-size: 16px; }  
-      .top-actions { flex-wrap: wrap; justify-content: flex-end; }  
-      .top-actions .btn { padding: 7px 9px; font-size: 12px; }  
-      .container { padding: 15px 10px 40px; }  
-      .job-head { flex-direction: column; }  
-      .payment-line { flex-direction: column; gap: 6px; }  
-      .info-grid { grid-template-columns: 1fr; }  
-      .job-actions .btn { flex: 1 1 45%; }  
-    }  
-  </style>  
-</head>  
-<body>  
-
-<div id="message" class="message"></div>  
-
-<!-- =========================================================  
-     AUTH & PUBLIC TRACKING SECTION  
-========================================================= -->  
-<section id="authSection" class="auth-wrap">  
-  <div class="auth-card">  
-    <div class="auth-brand">  
-      <div class="logo">SK</div>  
-      <h1>SK COMPUTER</h1>  
-      <p>Customer Service Portal</p>  
-    </div>  
-
-    <!-- Public Tracking Form -->  
-    <div style="background:var(--sub-card-bg); padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid var(--border-color);">  
-      <h3 style="margin:0 0 8px;">🔍 कामाची स्थिती तपासा (Track Job)</h3>  
-      <small style="color:var(--text-muted); display:block; margin-bottom:10px;">लॉगिन न करता थेट Job No. किंवा मोबाईल नंबरने तपासा:</small>  
-      <div style="display:flex; gap:8px;">  
-        <input id="publicTrackInput" placeholder="Job No. किंवा 10 अंकी नंबर">  
-        <button class="btn primary" onclick="trackJobPublic()">शोधा</button>  
-      </div>  
-      <div id="publicTrackResult" style="display:none; margin-top:12px;"></div>  
-    </div>  
-
-    <!-- Login Box -->  
-    <div id="loginBox">  
-      <h2>🔐 Account Login</h2>  
-      <form id="loginForm">  
-        <div class="form-group">  
-          <label>ई-मेल</label>  
-          <input id="loginEmail" type="email" required placeholder="उदा. customer@gmail.com">  
-        </div>  
-        <div class="form-group">  
-          <label>पासवर्ड</label>  
-          <input id="loginPassword" type="password" required placeholder="Password">  
-        </div>  
-        <button class="btn primary" style="width:100%">🔐 Login</button>  
-      </form>  
-
-      <div class="auth-links">  
-        <button id="resetPasswordBtn">Forgot Password?</button><br>  
-        <button id="showRegister">नवीन Customer Registration</button>  
-      </div>  
-    </div>  
-
-    <!-- Register Box -->  
-    <div id="registerBox" style="display:none">  
-      <h2>📝 नवीन Registration</h2>  
-      <form id="registerForm">  
-        <div class="form-group">  
-          <label>पूर्ण नाव</label>  
-          <input id="registerName" required placeholder="उदा. संतोष खेडकर">  
-        </div>  
-        <div class="form-group">  
-          <label>मोबाईल</label>  
-          <input id="registerPhone" inputmode="numeric" maxlength="10" required placeholder="10 अंकी नंबर">  
-        </div>  
-        <div class="form-group">  
-          <label>ई-मेल</label>  
-          <input id="registerEmail" type="email" required placeholder="Email Address">  
-        </div>  
-        <div class="form-group">  
-          <label>पासवर्ड</label>  
-          <input id="registerPassword" type="password" minlength="6" required placeholder="किमान 6 अक्षरे">  
-        </div>  
-        <button class="btn primary" style="width:100%">📝 Register</button>  
-      </form>  
-
-      <div class="auth-links">  
-        <button id="showLogin">आधीच Account आहे? Login</button>  
-      </div>  
-    </div>  
-  </div>  
-</section>  
-
-<!-- =========================================================  
-     TOP BAR  
-========================================================= -->  
-<header id="topBar" class="topbar" style="display:none">  
-  <div class="brand">  
-    <div class="logo">SK</div>  
-    <div>  
-      <h1>SK COMPUTER</h1>  
-      <small>Customer Portal</small>  
-    </div>  
-  </div>  
-  <div class="top-actions">  
-    <span id="userEmail" style="font-size:12px"></span>  
-    <button class="btn" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌓</button>  
-    <button id="customerBtn" class="btn">👤 Customer</button>  
-    <button id="adminBtn" class="btn primary" style="display:none">👨‍💼 Admin</button>  
-    <button id="refreshBtn" class="btn">🔄</button>  
-    <button id="logoutBtn" class="btn danger">Logout</button>  
-  </div>  
-</header>  
-
-<!-- =========================================================  
-     CUSTOMER SECTION  
-========================================================= -->  
-<section id="customerSection" style="display:none">  
-  <div class="container">  
-    <div class="page-title">  
-      <div>  
-        <h2>👋 Customer Dashboard</h2>  
-        <p>तुमच्या कामाची संपूर्ण माहिती येथे पहा.</p>  
-      </div>  
-    </div>  
-
-    <div class="card">  
-      <h3>👤 माझी Profile</h3>  
-      <form id="profileForm">  
-        <div class="grid">  
-          <div>  
-            <div class="form-group">  
-              <label>नाव</label>  
-              <input id="profileName" required>  
-            </div>  
-            <div class="form-group">  
-              <label>मोबाईल</label>  
-              <input id="profilePhone" maxlength="10" required>  
-            </div>  
-          </div>  
-          <div>  
-            <div class="form-group">  
-              <label>ई-मेल</label>  
-              <input id="profileEmail" readonly style="opacity: 0.7;">  
-            </div>  
-            <div class="form-group">  
-              <label>पत्ता</label>  
-              <input id="profileAddress">  
-            </div>  
-          </div>  
-        </div>  
-        <div class="form-group">  
-          <label>अतिरिक्त माहिती</label>  
-          <textarea id="profileDetails"></textarea>  
-        </div>  
-        <button class="btn primary">💾 Profile Save</button>  
-      </form>  
-    </div>  
-
-    <div>  
-      <div class="page-title">  
-        <div>  
-          <h2>📋 माझे Jobs</h2>  
-        </div>  
-      </div>  
-      <div id="customerJobs"></div>  
-    </div>  
-
-    <div class="card">  
-      <h3>📎 माझे Documents</h3>  
-      <form id="documentUploadForm">  
-        <div class="form-group">  
-          <input id="documentFile" type="file" required>  
-        </div>  
-        <button class="btn primary">📤 Upload Document</button>  
-      </form>  
-      <div id="documentsList"></div>  
-    </div>  
-
-    <div class="card">  
-      <h3 id="shopContactName">🏪 SK COMPUTER</h3>  
-      <p id="shopContactAddress"></p>  
-      <p id="shopContactPhone"></p>  
-      <p id="shopContactUpi"></p>  
-      <button class="btn whatsapp" onclick="openWhatsApp()">💬 WhatsApp वर संपर्क करा</button>  
-    </div>  
-  </div>  
-</section>  
-
-<!-- =========================================================  
-     ADMIN SECTION  
-========================================================= -->  
-<section id="adminSection" style="display:none">  
-  <div class="container">  
-    <div class="page-title">  
-      <div>  
-        <h2>👨‍💼 Admin Panel</h2>  
-        <p>SK COMPUTER Customer & Job Management</p>  
-      </div>  
-      <div>  
-        <button class="btn primary" onclick="showDailyCashbook()">📊 आजचा गल्ला (Cashbook)</button>  
-      </div>  
-    </div>  
-
-    <div class="stats">  
-      <div class="stat">  
-        <span>एकूण Customers</span>  
-        <strong id="totalCustomers">0</strong>  
-      </div>  
-      <div class="stat">  
-        <span>Shop Mobile</span>  
-        <strong>8888146077</strong>  
-      </div>  
-    </div>  
-
-    <div class="card">  
-      <h3>👥 Customer List</h3>  
-      <div class="form-group">  
-        <label>Search Customer</label>  
-        <input id="customerSearch" placeholder="नाव / मोबाईल / Email ने शोधा">  
-      </div>  
-    </div>  
-    <div id="adminCustomerList"></div>  
-
-    <div id="adminCustomerArea" style="display:none">  
-      <div class="card">  
-        <h2>👤 Selected Customer</h2>  
-        <div class="grid">  
-          <div>  
-            <p><b>नाव:</b> <span id="adminCustomerName"></span></p>  
-            <p><b>मोबाईल:</b> <span id="adminCustomerPhone"></span></p>  
-          </div>  
-          <div>  
-            <p><b>Email:</b> <span id="adminCustomerEmail"></span></p>  
-            <p><b>पत्ता:</b> <span id="adminCustomerAddress"></span></p>  
-          </div>  
-        </div>  
-
-        <hr>  
-        <h3>➕ नवीन Job तयार करा</h3>  
-        <form id="newJobForm">  
-          <input type="hidden" id="newJobCustomerId">  
-
-          <!-- सेवांची यादी (Pre-defined Catalogue) -->  
-          <div class="form-group">  
-            <label>⚡ झटपट सेवा निवडा (Service Catalogue):</label>  
-            <select id="serviceCatalogue" onchange="onServiceSelect(this.value)">  
-              <option value="">-- सेवा निवडा (किंवा खाली स्वतः लिहा) --</option>  
-              <option value="pan" data-title="नवीन PAN Card अर्ज" data-price="200">नवीन PAN Card (₹200)</option>  
-              <option value="pan_corr" data-title="PAN Card दुरुस्ती" data-price="250">PAN Card दुरुस्ती (₹250)</option>  
-              <option value="income" data-title="उत्पन्नाचा दाखला" data-price="150">उत्पन्नाचा दाखला (₹150)</option>  
-              <option value="caste" data-title="जातीचा दाखला (Caste Certificate)" data-price="200">जातीचा दाखला (₹200)</option>  
-              <option value="domicile" data-title="अधिवास प्रमाणपत्र (Domicile)" data-price="150">अधिवास प्रमाणपत्र (₹150)</option>  
-              <option value="ration" data-title="रेशन कार्ड ऑनलाइन अर्ज" data-price="150">रेशन कार्ड ऑनलाइन अर्ज (₹150)</option>  
-              <option value="epfo" data-title="PF Withdrawal / KYC" data-price="300">PF Withdrawal / KYC (₹300)</option>  
-              <option value="print" data-title="प्रिंट & लॅमिनेशन" data-price="50">प्रिंट & लॅमिनेशन (₹50)</option>  
-            </select>  
-          </div>  
-
-          <div class="grid">  
-            <div>  
-              <div class="form-group">  
-                <label>कामाचे नाव</label>  
-                <input id="jobTitle" required placeholder="उदा. PAN Card / Caste Certificate">  
-              </div>  
-              <div class="form-group">  
-                <label>एकूण रक्कम (₹)</label>  
-                <input id="jobTotal" type="number" min="0" value="0">  
-              </div>  
-            </div>  
-            <div>  
-              <div class="form-group">  
-                <label>Status</label>  
-                <select id="jobStatus">  
-                  <option value="Pending">Pending</option>  
-                  <option value="Processing">Processing</option>  
-                  <option value="Completed">Completed</option>  
-                  <option value="Cancelled">Cancelled</option>  
-                </select>  
-              </div>  
-              <div class="form-group">  
-                <label>Admin Note</label>  
-                <input id="jobAdminNotes" placeholder="फक्त ॲडमिनसाठी टीप">  
-              </div>  
-            </div>  
-          </div>  
-          <div class="form-group">  
-            <label>कामाचे विवरण</label>  
-            <textarea id="jobDetails" placeholder="कामाची सविस्तर माहिती"></textarea>  
-          </div>  
-          <button class="btn primary">➕ Job तयार करा व WhatsApp पाठवा</button>  
-        </form>  
-      </div>  
-
-      <div class="card">  
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">  
-          <h2>📋 Customer Jobs</h2>  
-          <div style="display:flex; gap:10px; align-items:center;">  
-            <label style="font-size:13px; font-weight:bold;">Filter Status:</label>  
-            <select id="filterStatus" onchange="filterAdminJobs()" style="width:140px; padding:6px;">  
-              <option value="All">All Jobs</option>  
-              <option value="Pending">Pending</option>  
-              <option value="Processing">Processing</option>  
-              <option value="Completed">Completed</option>  
-              <option value="Cancelled">Cancelled</option>  
-            </select>  
-          </div>  
-        </div>  
-        <div id="adminJobs" style="margin-top:15px;"></div>  
-      </div>  
-
-      <div class="card">  
-        <div id="adminDocuments"></div>  
-      </div>  
-    </div>  
-  </div>  
-</section>  
-
-<!-- =========================================================  
-     MODALS  
-========================================================= -->  
-<div id="jobModal" class="modal">  
-  <div class="modal-box">  
-    <button id="closeModal" class="close">×</button>  
-    <div id="modalContent"></div>  
-  </div>  
-</div>  
-
-<div id="upiModal" class="modal">  
-  <div class="modal-box">  
-    <button id="closeUPI" class="close">×</button>  
-    <div id="upiContent"></div>  
-  </div>  
-</div>  
-
-<div id="historyModal" class="modal">  
-  <div class="modal-box">  
-    <button id="closeHistory" class="close">×</button>  
-    <div id="historyContent"></div>  
-  </div>  
-</div>  
-
-<script>  
-  const savedTheme = localStorage.getItem("sk_theme") || "light";  
-  document.documentElement.setAttribute("data-theme", savedTheme);  
-</script>  
-</body>  
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SK Computer - ग्राहक व Admin पोर्टल</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box}
+:root{--primary:#1769e0;--success:#198754;--danger:#dc3545;--warning:#f59e0b;--dark:#172033;--gray:#667085;--light:#f5f8ff;--border:#d0d5dd}
+body{margin:0;padding:15px;min-height:100vh;font-family:"Noto Sans Devanagari","Nirmala UI",Mangal,"Segoe UI",Tahoma,sans-serif;color:#1f2937;background:linear-gradient(135deg,#eaf2ff,#f8fbff)}
+.container{width:100%;max-width:1100px;margin:auto}
+.card{background:#fff;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 8px 30px rgba(0,0,0,.10)}
+.logo{text-align:center;color:var(--primary);font-size:30px;font-weight:800}
+.subtitle{text-align:center;color:var(--gray);margin-bottom:10px}
+h2,h3{margin-top:0}
+.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
+.full{grid-column:1/-1}
+label{display:block;font-weight:600;margin-bottom:6px;font-size:14px}
+input,textarea,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:15px;font-family:inherit;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(23,105,224,.12)}
+button{border:0;border-radius:9px;padding:12px 15px;color:#fff;background:var(--primary);font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit}
+button:hover{opacity:.92}button:disabled{opacity:.6;cursor:not-allowed}
+.btn-green{background:var(--success)}.btn-red{background:var(--danger)}.btn-gray{background:#667085}.btn-orange{background:var(--warning)}.btn-dark{background:var(--dark)}
+.btn-small{padding:8px 10px;font-size:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.center{text-align:center}.hidden{display:none!important}
+.msg{min-height:20px;margin-top:12px;text-align:center;font-size:14px}
+.success{color:var(--success)}.error{color:var(--danger)}.info{color:var(--primary)}
+.link{text-align:center;margin-top:15px}.link a{color:var(--primary);font-weight:700;cursor:pointer}
+.wa-link{color:var(--success);font-weight:700;text-decoration:none}
+.user-box{background:var(--light);padding:12px;border-radius:10px;margin-bottom:15px;overflow-wrap:anywhere}
+.verify{background:#fff3cd;color:#664d03;padding:12px;border-radius:10px;margin-bottom:15px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:15px 0}
+.stat{padding:16px;border-radius:12px;background:var(--light);text-align:center}
+.stat b{display:block;font-size:25px;margin-top:5px}
+.status-badge{display:inline-block;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:700}
+.status-pending{background:#fff3cd;color:#856404}.status-processing{background:#cfe2ff;color:#084298}
+.status-completed{background:#d1e7dd;color:#0f5132}.status-cancelled{background:#f8d7da;color:#842029}
+.customer-card{border:1px solid #e5e7eb;border-radius:12px;padding:15px;margin-bottom:12px}
+.customer-title{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.pay-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed #ccc;font-size:13px}
+details{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin-bottom:8px}
+summary{cursor:pointer;font-weight:700}
+.receipt{max-width:700px;margin:auto;border:2px solid #222;padding:25px;background:#fff}
+.receipt.small{max-width:300px;font-size:12px;padding:10px}
+.receipt-header{text-align:center;border-bottom:1px solid #222;padding-bottom:15px;margin-bottom:15px}
+.receipt-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed #aaa}
+.amount-box{background:#f5f5f5;padding:12px;margin-top:15px}
+.qr-container{display:flex;flex-direction:column;align-items:center;margin-top:15px;padding:10px}
+.sign{display:flex;justify-content:space-between;margin-top:40px;font-size:13px}
+@media(max-width:700px){.form-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+@media print{
+  @page{margin:10mm}
+  body{background:#fff;padding:0}
+  .container>*:not(#receiptPrint){display:none!important}
+  #receiptPrint{box-shadow:none;padding:0;margin:0}
+  .no-print{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="card">
+  <div class="logo">SK COMPUTER</div>
+  <div class="subtitle">आपले सरकार व डिजिटल सेवा केंद्र, एकनाथवाडी</div>
+  <div class="center"><a class="wa-link" href="https://wa.me/918888146077" target="_blank" rel="noopener">💬 WhatsApp वर संपर्क करा</a></div>
+</div>
+
+<!-- AUTH -->
+<section id="authSection" class="card">
+  <h2 id="authTitle" class="center">ग्राहक लॉगिन</h2>
+  <div class="form-grid">
+    <div class="full"><label>ईमेल पत्ता</label><input type="email" id="email" placeholder="example@gmail.com" autocomplete="email"></div>
+    <div class="full"><label>पासवर्ड</label><input type="password" id="password" placeholder="तुमचा पासवर्ड" autocomplete="current-password"></div>
+  </div>
+  <button id="loginBtn">लॉगिन करा</button>
+  <button id="registerBtn" class="btn-green hidden">नवीन खाते तयार करा</button>
+  <button id="resetBtn" class="btn-gray hidden">पासवर्ड रीसेट ईमेल पाठवा</button>
+  <div class="link"><span id="toggleText">खाते नाही का?</span> <a id="toggleAuth">येथे नोंदणी करा</a></div>
+  <div class="link" id="forgotBox"><a id="forgotPassword">पासवर्ड विसरलात?</a></div>
+  <p id="authMsg" class="msg"></p>
+</section>
+
+<!-- SERVICES -->
+<section id="servicesCard" class="card">
+  <h3>आमच्या सेवा व लागणारी कागदपत्रे</h3>
+  <div id="serviceList"></div>
+  <small style="color:var(--gray)">कागदपत्रे योजनेनुसार बदलू शकतात. खात्रीसाठी WhatsApp वर विचारा.</small>
+</section>
+
+<!-- CUSTOMER -->
+<section id="customerSection" class="hidden">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div><h2>ग्राहक डॅशबोर्ड</h2><div class="user-box">ईमेल: <b id="customerEmail"></b></div></div>
+      <button id="customerLogout" class="btn-red">Logout</button>
+    </div>
+
+    <div id="verifyBox" class="verify hidden">
+      तुमचा ईमेल अजून व्हेरिफाय झालेला नाही. ईमेलमधील लिंकवर क्लिक करा, मग खालील बटन दाबा.
+      <div class="actions">
+        <button id="verifyCheck" class="btn-green btn-small">मी व्हेरिफाय केले</button>
+        <button id="verifyResend" class="btn-gray btn-small">पुन्हा ईमेल पाठवा</button>
+      </div>
+    </div>
+
+    <div class="customer-card">
+      <h3>माझी माहिती</h3>
+      <div class="form-grid">
+        <div><label>पूर्ण नाव</label><input id="pName"></div>
+        <div><label>मोबाईल नंबर</label><input id="pPhone" maxlength="10" inputmode="numeric" placeholder="10 अंकी"></div>
+        <div class="full"><label>पत्ता</label><textarea id="pAddress" rows="2"></textarea></div>
+      </div>
+      <button id="saveProfile" class="btn-green">माहिती Save करा</button>
+    </div>
+
+    <div class="customer-card">
+      <h3>नवीन काम नोंदवा</h3>
+      <div class="form-grid">
+        <div class="full"><label>सेवा</label><select id="jService"></select></div>
+        <div class="full"><label>कामाचे तपशील</label><textarea id="jDetails" rows="2"></textarea></div>
+        <div class="full"><label>कागदपत्र (फोटो / PDF - कमाल ५ MB)</label><input type="file" id="jFile" accept="image/*,application/pdf"></div>
+      </div>
+      <button id="addJob" class="btn-green">काम नोंदवा</button>
+      <p id="customerMsg" class="msg"></p>
+    </div>
+
+    <h3>माझी कामे</h3>
+    <div id="myJobs"></div>
+  </div>
+</section>
+
+<!-- ADMIN -->
+<section id="adminSection" class="hidden">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div><h2>SK Computer Admin Panel</h2><div class="user-box">Admin: <b id="adminEmail"></b></div></div>
+      <button id="adminLogout" class="btn-red">Logout</button>
+    </div>
+    <div class="stats">
+      <div class="stat">एकूण कामे<b id="statTotal">0</b></div>
+      <div class="stat">Pending<b id="statPending">0</b></div>
+      <div class="stat">Processing<b id="statProcessing">0</b></div>
+      <div class="stat">Completed<b id="statCompleted">0</b></div>
+    </div>
+    <div class="form-grid">
+      <div><label>शोधा</label><input id="adminSearch" placeholder="नाव / मोबाईल / काम"></div>
+      <div><label>Status Filter</label>
+        <select id="statusFilter"><option value="all">सर्व</option><option>Pending</option><option>Processing</option><option>Completed</option><option>Cancelled</option></select>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="newJobBtn" class="btn-green">➕ नवीन जॉब कार्ड</button>
+      <button id="refreshJobs" class="btn-dark">Refresh</button>
+    </div>
+    <p id="adminMsg" class="msg"></p>
+  </div>
+  <div class="card"><h3>कामांची यादी</h3><div id="jobList"></div></div>
+</section>
+
+<!-- ADMIN EDITOR -->
+<section id="adminEditor" class="card hidden">
+  <h2 id="editTitle">जॉब कार्ड</h2>
+  <div class="form-grid">
+    <div><label>ग्राहकाचे नाव</label><input id="eName"></div>
+    <div><label>मोबाईल</label><input id="ePhone" maxlength="10" inputmode="numeric"></div>
+    <div><label>सेवा</label><select id="eService"></select></div>
+    <div><label>Status</label>
+      <select id="eStatus"><option>Pending</option><option>Processing</option><option>Completed</option><option>Cancelled</option></select>
+    </div>
+    <div class="full"><label>कामाचे तपशील</label><textarea id="eDetails" rows="2"></textarea></div>
+    <div class="full"><label>Admin Notes</label><textarea id="eNotes" rows="2"></textarea></div>
+    <div><label>एकूण रक्कम (₹)</label><input id="eTotal" type="number" min="0" step="0.01"></div>
+    <div><label>हिशोब</label><div id="eCalc" class="user-box" style="margin:0"></div></div>
+    <div class="full" id="eDoc"></div>
+    <div class="full">
+      <label>पेमेंट इतिहास</label>
+      <div id="ePayList"></div>
+      <div class="form-grid" style="margin-top:8px">
+        <input id="payAmt" type="number" min="0" step="0.01" placeholder="नवीन पेमेंट ₹">
+        <select id="payMode"><option>रोख</option><option>UPI</option><option>इतर</option></select>
+      </div>
+      <button id="payAdd" class="btn-orange btn-small">➕ पेमेंट जोडा</button>
+    </div>
+  </div>
+  <div class="actions" style="margin-top:15px">
+    <button id="saveJob" class="btn-green">Save</button>
+    <button id="waBtn" class="btn-green">WhatsApp पाठवा</button>
+    <button id="receiptBtn" class="btn-orange">पावती</button>
+    <button id="closeEditor" class="btn-gray">Close</button>
+  </div>
+  <p id="editorMsg" class="msg"></p>
+</section>
+
+<!-- RECEIPT -->
+<section id="receiptPrint" class="card hidden">
+  <div class="receipt" id="receiptBox">
+    <div class="receipt-header">
+      <h2>SK COMPUTER</h2>
+      <div>आपले सरकार व डिजिटल सेवा केंद्र, एकनाथवाडी (पाथर्डी)</div>
+      <div>मो: 8888146077 | <b>पेमेंट पावती</b></div>
+    </div>
+    <div class="receipt-row"><b>पावती क्र.</b><span id="rNo"></span></div>
+    <div class="receipt-row"><b>दिनांक</b><span id="rDate"></span></div>
+    <div class="receipt-row"><b>ग्राहक</b><span id="rName"></span></div>
+    <div class="receipt-row"><b>मोबाईल</b><span id="rPhone"></span></div>
+    <div class="receipt-row"><b>काम</b><span id="rWork"></span></div>
+    <div style="margin-top:10px"><b>पेमेंट तपशील</b><div id="rPays"></div></div>
+    <div class="amount-box">
+      <div class="receipt-row"><b>एकूण रक्कम</b><span id="rTotal"></span></div>
+      <div class="receipt-row"><b>भरलेली रक्कम</b><span id="rPaid"></span></div>
+      <div class="receipt-row"><b>शिल्लक रक्कम</b><span id="rBal"></span></div>
+    </div>
+    <div id="rQrBox" class="qr-container hidden"><div id="rQr"></div><small style="margin-top:5px">शिल्लक रक्कम भरण्यासाठी कोड स्कॅन करा</small></div>
+    <div class="sign"><span>ग्राहकाची सही</span><span>SK Computer (सही / शिक्का)</span></div>
+    <div class="center" style="margin-top:12px">धन्यवाद!</div>
+  </div>
+  <div class="actions no-print" style="margin-top:15px">
+    <button id="printA4" class="btn-dark">A4 प्रिंट</button>
+    <button id="printSmall" class="btn-dark">छोटी पावती प्रिंट</button>
+    <button id="closeReceipt" class="btn-gray">Close</button>
+  </div>
+</section>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, collection, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-storage.js";
+import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
+
+const SHOP_UPI_ID = "santoshkhedkar@ybl";
+const SHOP_NAME = "SK Computer";
+const SHOP_WA = "918888146077";
+
+const SERVICES = [
+  ["पॅन कार्ड", "आधार कार्ड, फोटो, सही"],
+  ["आधार दुरुस्ती / अपडेट", "आधार कार्ड, पुरावा कागदपत्र"],
+  ["मतदार कार्ड", "आधार कार्ड, फोटो, वयाचा/पत्त्याचा पुरावा"],
+  ["ड्रायव्हिंग लायसन्स", "आधार कार्ड, फोटो, पत्त्याचा पुरावा"],
+  ["उत्पन्न दाखला", "आधार कार्ड, रेशन कार्ड, उत्पन्नाचा पुरावा"],
+  ["जात प्रमाणपत्र", "आधार कार्ड, शाळा सोडल्याचा दाखला, वडिलांचे कागदपत्र"],
+  ["७/१२ / ८अ उतारा", "गट/सर्व्हे नंबर माहिती"],
+  ["रेशन कार्ड", "आधार कार्ड सर्व सदस्यांचे, फोटो"],
+  ["ऑनलाइन फॉर्म / अर्ज", "संबंधित कागदपत्रे, आधार, मोबाईल नंबर"],
+  ["झेरॉक्स / प्रिंट / स्कॅन", "मूळ कागदपत्र"],
+  ["इतर", "कामाची माहिती लिहा"]
+];
+
+const app = initializeApp({
+  apiKey: "AIzaSyCguRWlUD0XhbTT-t90qxmhVMKRe-j09b8",
+  authDomain: "sk-computer-53668.firebaseapp.com",
+  projectId: "sk-computer-53668",
+  storageBucket: "sk-computer-53668.firebasestorage.app",
+  messagingSenderId: "181873271339",
+  appId: "1:181873271339:web:b22202fac5706669e8406e",
+  measurementId: "G-SH186W2EVD"
+});
+const auth = getAuth(app), db = getFirestore(app), storage = getStorage(app);
+isSupported().then(ok => { if(ok) getAnalytics(app); }).catch(() => {});
+
+const $ = id => document.getElementById(id);
+let registerMode = false, isAdmin = false, allJobs = [], sel = null, editPays = [];
+
+// ---------- Helpers ----------
+const num = v => parseFloat(v) || 0;
+const money = n => "₹" + num(n).toFixed(2);
+const fmtDate = d => new Date(d).toLocaleDateString("en-IN");
+function esc(v){ return String(v ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
+function safeUrl(u){ try{ const x = new URL(u); return x.protocol === "https:" ? x.href : ""; }catch(e){ return ""; } }
+function message(el, text, type = "info"){ if(el){ el.textContent = text; el.className = "msg " + type; } }
+function calc(j){
+  const total = num(j.totalAmount), pays = j.payments || [];
+  const paid = pays.reduce((a, p) => a + num(p.amt), 0);
+  return { total, paid, pays, bal: Math.max(total - paid, 0), ps: total > 0 && paid >= total ? "Paid" : paid > 0 ? "Partial" : "Unpaid" };
+}
+function statusBadge(s){
+  const m = { Pending:"status-pending", Processing:"status-processing", Completed:"status-completed", Cancelled:"status-cancelled" };
+  return `<span class="status-badge ${m[s] || "status-pending"}">${esc(s)}</span>`;
+}
+function paymentBadge(s){
+  const m = { Unpaid:"status-cancelled", Partial:"status-pending", Paid:"status-completed" };
+  return `<span class="status-badge ${m[s] || "status-cancelled"}">${esc(s)}</span>`;
+}
+function firebaseError(c){
+  return ({
+    "auth/invalid-credential":"ईमेल किंवा पासवर्ड चुकीचा आहे.",
+    "auth/email-already-in-use":"हा ईमेल आधीच नोंदणीकृत आहे.",
+    "auth/weak-password":"पासवर्ड किमान ६ अक्षरांचा असावा.",
+    "auth/invalid-email":"ईमेल पत्ता योग्य नाही.",
+    "auth/user-not-found":"या ईमेलने खाते सापडले नाही.",
+    "auth/missing-password":"पासवर्ड टाका.",
+    "auth/too-many-requests":"खूप प्रयत्न झाले. थोड्या वेळाने पुन्हा प्रयत्न करा.",
+    "auth/network-request-failed":"इंटरनेट कनेक्शन तपासा.",
+    "permission-denied":"परवानगी नाही. (ईमेल व्हेरिफाय केला आहे का? Rules तपासा.)",
+    "app/bad-file":"फक्त फोटो किंवा PDF फाइल चालेल.",
+    "storage/unauthorized":"फाइल अपलोड परवानगी नाकारली गेली."
+  })[c] || "काहीतरी त्रुटी आली. पुन्हा प्रयत्न करा.";
+}
+function renderQr(id, amount, note = "SK Computer Payment", size = 120){
+  const t = $(id); if(!t) return;
+  t.innerHTML = "";
+  if(amount <= 0 || typeof QRCode === "undefined") return;
+  const tn = String(note).replace(/[^\x20-\x7E]/g, "").trim() || "SK Computer Payment";
+  const url = `upi://pay?pa=${encodeURIComponent(SHOP_UPI_ID)}&pn=${encodeURIComponent(SHOP_NAME)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(tn)}`;
+  try{ new QRCode(t, { text:url, width:size, height:size, correctLevel:QRCode.CorrectLevel.M }); }catch(e){ console.warn(e); }
+}
+const payHtml = pays => (pays || []).map(p => `<div class="pay-row"><span>${fmtDate(p.date)} • ${esc(p.mode)}</span><b>${money(p.amt)}</b></div>`).join("") || `<small style="color:var(--gray)">अजून पेमेंट नाही</small>`;
+function digitsOnly(...els){ els.forEach(i => i.addEventListener("input", () => { i.value = i.value.replace(/\D/g, "").slice(0, 10); })); }
+
+// ---------- Static UI ----------
+$("serviceList").innerHTML = SERVICES.map(([n, d]) => `<details><summary>${esc(n)}</summary><div style="margin-top:6px">लागणारी कागदपत्रे: ${esc(d)}</div></details>`).join("");
+const svcOptions = SERVICES.map(([n]) => `<option>${esc(n)}</option>`).join("");
+$("jService").innerHTML = svcOptions; $("eService").innerHTML = svcOptions;
+digitsOnly($("pPhone"), $("ePhone"));
+
+// ---------- Auth ----------
+$("password").addEventListener("keydown", e => { if(e.key === "Enter") (registerMode ? $("registerBtn") : $("loginBtn")).click(); });
+$("toggleAuth").addEventListener("click", () => {
+  registerMode = !registerMode;
+  $("authMsg").textContent = "";
+  $("authTitle").textContent = registerMode ? "नवीन ग्राहक नोंदणी" : "ग्राहक लॉगिन";
+  $("loginBtn").classList.toggle("hidden", registerMode);
+  $("registerBtn").classList.toggle("hidden", !registerMode);
+  $("resetBtn").classList.add("hidden");
+  $("forgotBox").classList.toggle("hidden", registerMode);
+  $("toggleText").textContent = registerMode ? "आधीच खाते आहे का?" : "खाते नाही का?";
+  $("toggleAuth").textContent = registerMode ? "लॉगिन करा" : "येथे नोंदणी करा";
+});
+$("registerBtn").addEventListener("click", async () => {
+  const email = $("email").value.trim(), pw = $("password").value;
+  if(!email || pw.length < 6){ message($("authMsg"), "योग्य ईमेल आणि किमान ६ अक्षरांचा पासवर्ड टाका.", "error"); return; }
+  $("registerBtn").disabled = true;
+  try{
+    const r = await createUserWithEmailAndPassword(auth, email, pw);
+    await sendEmailVerification(r.user);
+  }catch(err){ message($("authMsg"), firebaseError(err.code), "error"); }
+  finally{ $("registerBtn").disabled = false; }
+});
+$("loginBtn").addEventListener("click", async () => {
+  const email = $("email").value.trim(), pw = $("password").value;
+  if(!email || !pw){ message($("authMsg"), "ईमेल आणि पासवर्ड भरा.", "error"); return; }
+  $("loginBtn").disabled = true;
+  try{ await signInWithEmailAndPassword(auth, email, pw); }
+  catch(err){ message($("authMsg"), firebaseError(err.code), "error"); }
+  finally{ $("loginBtn").disabled = false; }
+});
+$("forgotPassword").addEventListener("click", () => {
+  $("resetBtn").classList.remove("hidden");
+  message($("authMsg"), "ईमेल टाकून रीसेट बटनावर क्लिक करा.", "info");
+});
+$("resetBtn").addEventListener("click", async () => {
+  const email = $("email").value.trim();
+  if(!email){ message($("authMsg"), "प्रथम ईमेल लिहा.", "error"); return; }
+  try{ await sendPasswordResetEmail(auth, email); message($("authMsg"), "रीसेट लिंक पाठवली आहे.", "success"); }
+  catch(err){ message($("authMsg"), firebaseError(err.code), "error"); }
+});
+$("customerLogout").addEventListener("click", () => signOut(auth));
+$("adminLogout").addEventListener("click", () => signOut(auth));
+
+function hideAll(){ ["authSection","customerSection","adminSection","adminEditor","receiptPrint"].forEach(i => $(i).classList.add("hidden")); }
+function resetState(){
+  allJobs = []; sel = null; editPays = []; isAdmin = false;
+  ["pName","pPhone","pAddress","jDetails","jFile","password"].forEach(i => $(i).value = "");
+  ["myJobs","jobList","rQr","ePayList"].forEach(i => $(i).innerHTML = "");
+  ["customerMsg","adminMsg","editorMsg"].forEach(i => message($(i), ""));
+}
+
+onAuthStateChanged(auth, async user => {
+  hideAll(); resetState();
+  $("servicesCard").classList.remove("hidden");
+  if(!user){ $("authSection").classList.remove("hidden"); return; }
+  try{
+    const adminSnap = await getDoc(doc(db, "admins", user.uid));
+    if(adminSnap.exists()){
+      isAdmin = true;
+      $("servicesCard").classList.add("hidden");
+      $("adminSection").classList.remove("hidden");
+      $("adminEmail").textContent = user.email || "";
+      await loadJobs();
+      return;
+    }
+    $("customerSection").classList.remove("hidden");
+    $("customerEmail").textContent = user.email || "";
+    $("verifyBox").classList.toggle("hidden", user.emailVerified);
+    await loadProfile(user.uid);
+    await loadJobs();
+  }catch(err){
+    $("authSection").classList.remove("hidden");
+    message($("authMsg"), "डेटाबेस लोड करताना त्रुटी आली.", "error");
+  }
+});
+
+// ---------- Customer ----------
+$("verifyResend").addEventListener("click", async () => {
+  try{ await sendEmailVerification(auth.currentUser); message($("customerMsg"), "व्हेरिफिकेशन ईमेल पाठवला.", "success"); }
+  catch(e){ message($("customerMsg"), firebaseError(e.code), "error"); }
+});
+$("verifyCheck").addEventListener("click", async () => {
+  await auth.currentUser.reload();
+  await auth.currentUser.getIdToken(true);
+  if(auth.currentUser.emailVerified){ $("verifyBox").classList.add("hidden"); message($("customerMsg"), "ईमेल व्हेरिफाय झाला!", "success"); }
+  else message($("customerMsg"), "अजून व्हेरिफाय झालेला नाही.", "error");
+});
+async function loadProfile(uid){
+  const s = await getDoc(doc(db, "customers", uid));
+  if(!s.exists()) return;
+  const d = s.data();
+  $("pName").value = d.name || ""; $("pPhone").value = d.phone || ""; $("pAddress").value = d.address || "";
+}
+function profileData(){
+  const name = $("pName").value.trim(), phone = $("pPhone").value.trim(), address = $("pAddress").value.trim();
+  if(!auth.currentUser.emailVerified){ message($("customerMsg"), "प्रथम ईमेल व्हेरिफाय करा.", "error"); return null; }
+  if(!name){ message($("customerMsg"), "कृपया पूर्ण नाव टाका.", "error"); return null; }
+  if(!/^[0-9]{10}$/.test(phone)){ message($("customerMsg"), "मोबाईल नंबर १० अंकी असावा.", "error"); return null; }
+  return { name, phone, address };
+}
+async function saveProfileDoc(p){
+  const u = auth.currentUser;
+  await setDoc(doc(db, "customers", u.uid), { ...p, email: u.email || "", updatedAt: serverTimestamp() });
+}
+$("saveProfile").addEventListener("click", async () => {
+  const p = profileData(); if(!p) return;
+  try{ await saveProfileDoc(p); message($("customerMsg"), "माहिती सेव्ह झाली!", "success"); }
+  catch(e){ message($("customerMsg"), firebaseError(e.code), "error"); }
+});
+$("addJob").addEventListener("click", async () => {
+  const p = profileData(); if(!p) return;
+  const u = auth.currentUser, file = $("jFile").files[0], details = $("jDetails").value.trim();
+  if(file && file.size > 5 * 1024 * 1024){ message($("customerMsg"), "फाइल ५ MB पेक्षा कमी असावी.", "error"); return; }
+  $("addJob").disabled = true;
+  message($("customerMsg"), "काम नोंदवत आहे...", "info");
+  try{
+    let documentUrl = "";
+    if(file){
+      if(!(file.type.startsWith("image/") || file.type === "application/pdf")) throw { code:"app/bad-file" };
+      const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(-80);
+      const r = await uploadBytes(sRef(storage, `customer_docs/${u.uid}/${Date.now()}_${safeName}`), file, { contentType:file.type });
+      documentUrl = await getDownloadURL(r.ref);
+    }
+    await saveProfileDoc(p);
+    await addDoc(collection(db, "jobs"), {
+      ownerUid: u.uid, custName: p.name, custPhone: p.phone, custEmail: u.email || "",
+      service: $("jService").value, details, documentUrl,
+      status: "Pending", totalAmount: 0, paidAmount: 0, paymentStatus: "Unpaid", payments: [], adminNotes: "",
+      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+    });
+    $("jDetails").value = ""; $("jFile").value = "";
+    await loadJobs();
+    message($("customerMsg"), "काम नोंदवले गेले!", "success");
+  }catch(e){ message($("customerMsg"), "त्रुटी: " + firebaseError(e.code), "error"); }
+  finally{ $("addJob").disabled = false; }
+});
+
+// ---------- Jobs list ----------
+async function loadJobs(){
+  const u = auth.currentUser; if(!u) return;
+  try{
+    const q = isAdmin ? collection(db, "jobs") : query(collection(db, "jobs"), where("ownerUid", "==", u.uid));
+    const snap = await getDocs(q);
+    allJobs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
+    allJobs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    if(sel && !sel.isNew) sel = allJobs.find(x => x.id === sel.id) || null;
+    isAdmin ? (updateStats(), renderAdminJobs()) : renderMyJobs();
+  }catch(e){ message(isAdmin ? $("adminMsg") : $("customerMsg"), "यादी लोड झाली नाही.", "error"); }
+}
+function renderMyJobs(){
+  if(!allJobs.length){ $("myJobs").innerHTML = `<div class="center" style="padding:15px">अजून कोणतेही काम नोंदवलेले नाही.</div>`; return; }
+  $("myJobs").innerHTML = allJobs.map(j => {
+    const c = calc(j), link = safeUrl(j.documentUrl);
+    return `<div class="customer-card">
+      <div class="customer-title"><h3>${esc(j.service || "काम")}</h3><div>${statusBadge(j.status || "Pending")} ${paymentBadge(c.ps)}</div></div>
+      <div>${esc(j.details || "-")}</div>
+      ${link ? `<div style="margin-top:5px"><a href="${esc(link)}" target="_blank" rel="noopener">📄 कागदपत्र पाहा</a></div>` : ""}
+      <div style="margin-top:6px">एकूण: ${money(c.total)} | भरलेले: ${money(c.paid)} | <b>बाकी: ${money(c.bal)}</b></div>
+      <div style="margin-top:6px">${payHtml(c.pays)}</div>
+      ${c.bal > 0 ? `<div class="qr-container"><b>ऑनलाइन पेमेंटसाठी QR स्कॅन करा</b><div id="qr_${esc(j.id)}" style="margin-top:8px"></div></div>` : ""}
+    </div>`;
+  }).join("");
+  allJobs.forEach(j => { const c = calc(j); if(c.bal > 0) renderQr("qr_" + j.id, c.bal, "Payment " + (j.service || "")); });
+}
+
+// ---------- Admin ----------
+function updateStats(){
+  $("statTotal").textContent = allJobs.length;
+  ["Pending","Processing","Completed"].forEach(s => $("stat" + s).textContent = allJobs.filter(x => (x.status || "Pending") === s).length);
+}
+function renderAdminJobs(){
+  const s = $("adminSearch").value.trim().toLowerCase(), f = $("statusFilter").value;
+  const list = allJobs.filter(j => `${j.custName||""} ${j.custPhone||""} ${j.service||""} ${j.details||""}`.toLowerCase().includes(s) && (f === "all" || (j.status || "Pending") === f));
+  if(!list.length){ $("jobList").innerHTML = `<div class="center" style="padding:15px">कोणतेही काम सापडले नाही.</div>`; return; }
+  $("jobList").innerHTML = list.map(j => {
+    const c = calc(j), link = safeUrl(j.documentUrl);
+    return `<div class="customer-card">
+      <div class="customer-title"><div><h3>${esc(j.custName || "नाव नाही")} — ${esc(j.service || "")}</h3><div>${esc(j.custPhone || "-")}${j.custEmail ? " | " + esc(j.custEmail) : ""}</div></div><div>${statusBadge(j.status || "Pending")}</div></div>
+      <div style="margin-top:6px">${esc(j.details || "-")}</div>
+      ${link ? `<div style="margin-top:5px"><a href="${esc(link)}" target="_blank" rel="noopener">📄 कागदपत्र पाहा</a></div>` : ""}
+      <div style="margin-top:6px">${paymentBadge(c.ps)} एकूण: ${money(c.total)} | भरलेले: ${money(c.paid)} | <b>बाकी: ${money(c.bal)}</b></div>
+      <div class="actions" style="margin-top:10px">
+        <button class="btn-dark btn-small" data-a="manage" data-id="${esc(j.id)}">Manage</button>
+        <button class="btn-green btn-small" data-a="wa" data-id="${esc(j.id)}">WhatsApp</button>
+        <button class="btn-orange btn-small" data-a="receipt" data-id="${esc(j.id)}">पावती</button>
+      </div></div>`;
+  }).join("");
+}
+$("refreshJobs").addEventListener("click", loadJobs);
+$("adminSearch").addEventListener("input", renderAdminJobs);
+$("statusFilter").addEventListener("change", renderAdminJobs);
+$("jobList").addEventListener("click", e => {
+  const b = e.target.closest("button[data-a]"); if(!b) return;
+  const j = allJobs.find(x => x.id === b.dataset.id); if(!j) return;
+  if(b.dataset.a === "manage") openEditor(j);
+  if(b.dataset.a === "wa") openWA(j);
+  if(b.dataset.a === "receipt") openReceipt(j);
+});
+$("newJobBtn").addEventListener("click", () => openEditor({ isNew:true, status:"Pending", payments:[], totalAmount:0 }));
+
+function refreshEditCalc(){
+  const c = calc({ totalAmount:$("eTotal").value, payments:editPays });
+  $("eCalc").innerHTML = `भरलेले: <b>${money(c.paid)}</b><br>बाकी: <b>${money(c.bal)}</b><br>${paymentBadge(c.ps)}`;
+  $("ePayList").innerHTML = editPays.length
+    ? editPays.map((p, i) => `<div class="pay-row"><span>${fmtDate(p.date)} • ${esc(p.mode)} • <b>${money(p.amt)}</b></span><button class="btn-red btn-small" style="margin:0" data-del="${i}">हटवा</button></div>`).join("")
+    : payHtml([]);
+}
+function openEditor(j){
+  sel = j;
+  $("editTitle").textContent = j.isNew ? "नवीन जॉब कार्ड" : "जॉब कार्ड";
+  $("eName").value = j.custName || ""; $("ePhone").value = j.custPhone || "";
+  $("eService").value = j.service || SERVICES[0][0];
+  $("eStatus").value = j.status || "Pending";
+  $("eDetails").value = j.details || ""; $("eNotes").value = j.adminNotes || "";
+  $("eTotal").value = num(j.totalAmount);
+  editPays = (j.payments || []).map(p => ({ ...p }));
+  const link = safeUrl(j.documentUrl);
+  $("eDoc").innerHTML = link ? `<a href="${esc(link)}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:bold">📄 कागदपत्र उघडा</a>` : "";
+  message($("editorMsg"), "");
+  refreshEditCalc();
+  $("adminEditor").classList.remove("hidden");
+  $("adminEditor").scrollIntoView({ behavior:"smooth" });
+}
+$("eTotal").addEventListener("input", refreshEditCalc);
+$("payAdd").addEventListener("click", () => {
+  const amt = num($("payAmt").value);
+  if(amt <= 0){ message($("editorMsg"), "पेमेंट रक्कम टाका.", "error"); return; }
+  editPays.push({ amt, mode:$("payMode").value, date:new Date().toISOString() });
+  $("payAmt").value = ""; message($("editorMsg"), "पेमेंट जोडले. Save करायला विसरू नका.", "info");
+  refreshEditCalc();
+});
+$("ePayList").addEventListener("click", e => {
+  const b = e.target.closest("button[data-del]"); if(!b) return;
+  editPays.splice(+b.dataset.del, 1); refreshEditCalc();
+});
+$("saveJob").addEventListener("click", async () => {
+  if(!sel) return;
+  const name = $("eName").value.trim(), phone = $("ePhone").value.trim(), total = num($("eTotal").value);
+  const c = calc({ totalAmount:total, payments:editPays });
+  if(!name){ message($("editorMsg"), "ग्राहकाचे नाव टाका.", "error"); return; }
+  if(phone && !/^[0-9]{10}$/.test(phone)){ message($("editorMsg"), "मोबाईल नंबर १० अंकी असावा.", "error"); return; }
+  if(c.paid > total){ message($("editorMsg"), "भरलेली रक्कम एकूण रकमेपेक्षा जास्त आहे.", "error"); return; }
+  const data = {
+    custName:name, custPhone:phone, service:$("eService").value, status:$("eStatus").value,
+    details:$("eDetails").value.trim(), adminNotes:$("eNotes").value.trim(),
+    totalAmount:total, payments:editPays, paidAmount:c.paid, paymentStatus:c.ps, updatedAt:serverTimestamp()
+  };
+  const wasCompleted = sel.status === "Completed";
+  $("saveJob").disabled = true;
+  try{
+    if(sel.isNew){
+      const r = await addDoc(collection(db, "jobs"), { ...data, ownerUid:"", custEmail:"", documentUrl:"", createdAt:serverTimestamp() });
+      sel = { ...data, id:r.id, ownerUid:"" };
+    }else{
+      await updateDoc(doc(db, "jobs", sel.id), data);
+      sel = { ...sel, ...data };
+    }
+    message($("editorMsg"), "यशस्वीरित्या Save झाले!", "success");
+    await loadJobs();
+    if(data.status === "Completed" && !wasCompleted && data.custPhone && confirm("काम पूर्ण झाले. ग्राहकाला WhatsApp संदेश पाठवायचा?")) openWA(sel);
+  }catch(e){ message($("editorMsg"), "Save करताना त्रुटी: " + firebaseError(e.code), "error"); }
+  finally{ $("saveJob").disabled = false; }
+});
+$("closeEditor").addEventListener("click", () => { $("adminEditor").classList.add("hidden"); sel = null; });
+
+// ---------- WhatsApp ----------
+function openWA(j){
+  let phone = String(j.custPhone || "").replace(/\D/g, "");
+  if(!phone){ alert("मोबाईल नंबर उपलब्ध नाही."); return; }
+  if(phone.length === 10) phone = "91" + phone;
+  const c = calc(j), st = j.status || "Pending";
+  const line = {
+    Pending:"तुमचे काम नोंदवले आहे. लवकरच सुरू करू.",
+    Processing:"तुमचे काम सुरू आहे.",
+    Completed:"✅ तुमचे काम पूर्ण झाले आहे. कृपया केंद्रावर येऊन घेऊन जावे.",
+    Cancelled:"तुमचे काम रद्द करण्यात आले आहे."
+  }[st];
+  const text = `*SK COMPUTER सेवा अपडेट*\n\nनमस्कार *${j.custName || "ग्राहक"}*,\n${line}\n\nसेवा: ${j.service || "-"}\nStatus: *${st}*\nएकूण: ${money(c.total)}\nभरलेले: ${money(c.paid)}\n*बाकी: ${money(c.bal)}*\n\nधन्यवाद!\nSK Computer, एकनाथवाडी`;
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+}
+$("waBtn").addEventListener("click", () => { if(sel) openWA({ ...sel, custName:$("eName").value, custPhone:$("ePhone").value, status:$("eStatus").value, service:$("eService").value, totalAmount:$("eTotal").value, payments:editPays }); });
+
+// ---------- Receipt ----------
+function openReceipt(j){
+  const c = calc(j), d = new Date(), z = n => String(n).padStart(2, "0");
+  $("rNo").textContent = `SK-${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${String(j.id || "NEW").slice(0, 4).toUpperCase()}`;
+  $("rDate").textContent = d.toLocaleDateString("en-IN");
+  $("rName").textContent = j.custName || "-"; $("rPhone").textContent = j.custPhone || "-";
+  $("rWork").textContent = `${j.service || ""}${j.details ? " - " + j.details : ""}`;
+  $("rPays").innerHTML = payHtml(c.pays);
+  $("rTotal").textContent = money(c.total); $("rPaid").textContent = money(c.paid); $("rBal").textContent = money(c.bal);
+  $("rQrBox").classList.toggle("hidden", c.bal <= 0);
+  if(c.bal > 0) renderQr("rQr", c.bal, "Receipt Balance", 140); else $("rQr").innerHTML = "";
+  $("receiptBox").classList.remove("small");
+  $("receiptPrint").classList.remove("hidden");
+  $("receiptPrint").scrollIntoView({ behavior:"smooth" });
+}
+$("receiptBtn").addEventListener("click", () => { if(sel && !sel.isNew) openReceipt({ ...sel, custName:$("eName").value, custPhone:$("ePhone").value, service:$("eService").value, details:$("eDetails").value, totalAmount:$("eTotal").value, payments:editPays }); else message($("editorMsg"), "प्रथम Save करा.", "error"); });
+$("printA4").addEventListener("click", () => { $("receiptBox").classList.remove("small"); window.print(); });
+$("printSmall").addEventListener("click", () => { $("receiptBox").classList.add("small"); window.print(); });
+$("closeReceipt").addEventListener("click", () => $("receiptPrint").classList.add("hidden"));
+</script>
+</body>
 </html>
