@@ -3,623 +3,2737 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SK Computer - ग्राहक व Admin पोर्टल</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<title>SK Computer - Customer & Admin Portal</title>
+
 <style>
-*{box-sizing:border-box}
-:root{--primary:#1769e0;--success:#198754;--danger:#dc3545;--warning:#f59e0b;--dark:#172033;--gray:#667085;--light:#f5f8ff;--border:#d0d5dd}
-body{margin:0;padding:15px;min-height:100vh;font-family:"Noto Sans Devanagari","Nirmala UI",Mangal,"Segoe UI",Tahoma,sans-serif;color:#1f2937;background:linear-gradient(135deg,#eaf2ff,#f8fbff)}
-.container{width:100%;max-width:1100px;margin:auto}
-.card{background:#fff;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 8px 30px rgba(0,0,0,.10)}
-.logo{text-align:center;color:var(--primary);font-size:30px;font-weight:800}
-.subtitle{text-align:center;color:var(--gray);margin-bottom:10px}
-h2,h3{margin-top:0}
-.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px}
-.full{grid-column:1/-1}
-label{display:block;font-weight:600;margin-bottom:6px;font-size:14px}
-input,textarea,select{width:100%;padding:12px;border:1px solid var(--border);border-radius:9px;font-size:15px;font-family:inherit;outline:none}
-input:focus,textarea:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(23,105,224,.12)}
-button{border:0;border-radius:9px;padding:12px 15px;color:#fff;background:var(--primary);font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;font-family:inherit}
-button:hover{opacity:.92}button:disabled{opacity:.6;cursor:not-allowed}
-.btn-green{background:var(--success)}.btn-red{background:var(--danger)}.btn-gray{background:#667085}.btn-orange{background:var(--warning)}.btn-dark{background:var(--dark)}
-.btn-small{padding:8px 10px;font-size:12px}
-.actions{display:flex;flex-wrap:wrap;gap:8px}
-.center{text-align:center}.hidden{display:none!important}
-.msg{min-height:20px;margin-top:12px;text-align:center;font-size:14px}
-.success{color:var(--success)}.error{color:var(--danger)}.info{color:var(--primary)}
-.link{text-align:center;margin-top:15px}.link a{color:var(--primary);font-weight:700;cursor:pointer}
-.wa-link{color:var(--success);font-weight:700;text-decoration:none}
-.user-box{background:var(--light);padding:12px;border-radius:10px;margin-bottom:15px;overflow-wrap:anywhere}
-.verify{background:#fff3cd;color:#664d03;padding:12px;border-radius:10px;margin-bottom:15px}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:15px 0}
-.stat{padding:16px;border-radius:12px;background:var(--light);text-align:center}
-.stat b{display:block;font-size:25px;margin-top:5px}
-.status-badge{display:inline-block;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:700}
-.status-pending{background:#fff3cd;color:#856404}.status-processing{background:#cfe2ff;color:#084298}
-.status-completed{background:#d1e7dd;color:#0f5132}.status-cancelled{background:#f8d7da;color:#842029}
-.customer-card{border:1px solid #e5e7eb;border-radius:12px;padding:15px;margin-bottom:12px}
-.customer-title{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.pay-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed #ccc;font-size:13px}
-details{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin-bottom:8px}
-summary{cursor:pointer;font-weight:700}
-.receipt{max-width:700px;margin:auto;border:2px solid #222;padding:25px;background:#fff}
-.receipt.small{max-width:300px;font-size:12px;padding:10px}
-.receipt-header{text-align:center;border-bottom:1px solid #222;padding-bottom:15px;margin-bottom:15px}
-.receipt-row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed #aaa}
-.amount-box{background:#f5f5f5;padding:12px;margin-top:15px}
-.qr-container{display:flex;flex-direction:column;align-items:center;margin-top:15px;padding:10px}
-.sign{display:flex;justify-content:space-between;margin-top:40px;font-size:13px}
-@media(max-width:700px){.form-grid{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+*{
+  box-sizing:border-box;
+}
+
+:root{
+  --primary:#1769e0;
+  --primary-dark:#0f55bd;
+  --success:#198754;
+  --danger:#dc3545;
+  --warning:#f59e0b;
+  --dark:#172033;
+  --gray:#667085;
+  --light:#f5f8ff;
+  --border:#d0d5dd;
+}
+
+body{
+  margin:0;
+  padding:15px;
+  min-height:100vh;
+  font-family:"Segoe UI",Tahoma,sans-serif;
+  color:#1f2937;
+  background:linear-gradient(135deg,#eaf2ff,#f8fbff);
+}
+
+.container{
+  width:100%;
+  max-width:1100px;
+  margin:auto;
+}
+
+.card{
+  background:#fff;
+  border-radius:18px;
+  padding:22px;
+  margin-bottom:18px;
+  box-shadow:0 8px 30px rgba(0,0,0,.10);
+}
+
+.logo{
+  text-align:center;
+  color:var(--primary);
+  font-size:30px;
+  font-weight:800;
+}
+
+.subtitle{
+  text-align:center;
+  color:var(--gray);
+  margin-bottom:20px;
+}
+
+h2,h3{
+  margin-top:0;
+}
+
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:15px;
+}
+
+.full{
+  grid-column:1/-1;
+}
+
+label{
+  display:block;
+  font-weight:600;
+  margin-bottom:6px;
+  font-size:14px;
+}
+
+input,
+textarea,
+select{
+  width:100%;
+  padding:12px;
+  border:1px solid var(--border);
+  border-radius:9px;
+  font-size:15px;
+  font-family:inherit;
+  outline:none;
+}
+
+textarea{
+  resize:vertical;
+}
+
+input:focus,
+textarea:focus,
+select:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 3px rgba(23,105,224,.12);
+}
+
+button{
+  border:0;
+  border-radius:9px;
+  padding:12px 15px;
+  color:#fff;
+  background:var(--primary);
+  font-size:14px;
+  font-weight:700;
+  cursor:pointer;
+  margin-top:8px;
+}
+
+button:hover{
+  opacity:.92;
+}
+
+button:disabled{
+  opacity:.6;
+  cursor:not-allowed;
+}
+
+.btn-green{background:var(--success)}
+.btn-red{background:var(--danger)}
+.btn-gray{background:#667085}
+.btn-orange{background:var(--warning)}
+.btn-dark{background:var(--dark)}
+
+.btn-small{
+  padding:8px 10px;
+  font-size:12px;
+}
+
+.actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.actions button{
+  margin-top:0;
+}
+
+.center{
+  text-align:center;
+}
+
+.hidden{
+  display:none!important;
+}
+
+.msg{
+  min-height:20px;
+  margin-top:12px;
+  text-align:center;
+  font-size:14px;
+}
+
+.success{
+  color:var(--success);
+}
+
+.error{
+  color:var(--danger);
+}
+
+.info{
+  color:var(--primary);
+}
+
+.link{
+  text-align:center;
+  margin-top:15px;
+}
+
+.link a{
+  color:var(--primary);
+  font-weight:700;
+  cursor:pointer;
+}
+
+.user-box{
+  background:var(--light);
+  padding:12px;
+  border-radius:10px;
+  margin-bottom:15px;
+  overflow-wrap:anywhere;
+}
+
+.verify{
+  background:#fff3cd;
+  color:#664d03;
+  padding:15px;
+  border-radius:10px;
+  margin-bottom:15px;
+}
+
+.dashboard-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  flex-wrap:wrap;
+}
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin:15px 0;
+}
+
+.stat{
+  padding:16px;
+  border-radius:12px;
+  background:var(--light);
+  text-align:center;
+}
+
+.stat b{
+  display:block;
+  font-size:25px;
+  margin-top:5px;
+}
+
+.status-badge{
+  display:inline-block;
+  padding:5px 10px;
+  border-radius:20px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.status-pending{
+  background:#fff3cd;
+  color:#856404;
+}
+
+.status-processing{
+  background:#cfe2ff;
+  color:#084298;
+}
+
+.status-completed{
+  background:#d1e7dd;
+  color:#0f5132;
+}
+
+.status-cancelled{
+  background:#f8d7da;
+  color:#842029;
+}
+
+.table-wrap{
+  overflow-x:auto;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width:850px;
+}
+
+th,td{
+  padding:11px;
+  border-bottom:1px solid #e5e7eb;
+  text-align:left;
+  font-size:13px;
+}
+
+th{
+  background:#f5f7fa;
+}
+
+.customer-card{
+  border:1px solid #e5e7eb;
+  border-radius:12px;
+  padding:15px;
+  margin-bottom:12px;
+}
+
+.customer-title{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.receipt{
+  max-width:700px;
+  margin:auto;
+  border:2px solid #222;
+  padding:25px;
+  background:white;
+}
+
+.receipt-header{
+  text-align:center;
+  border-bottom:1px solid #222;
+  padding-bottom:15px;
+  margin-bottom:15px;
+}
+
+.receipt-row{
+  display:flex;
+  justify-content:space-between;
+  padding:7px 0;
+  border-bottom:1px dashed #aaa;
+}
+
+.amount-box{
+  background:#f5f5f5;
+  padding:12px;
+  margin-top:15px;
+}
+
+@media(max-width:700px){
+  .form-grid{
+    grid-template-columns:1fr;
+  }
+
+  .full{
+    grid-column:auto;
+  }
+
+  .stats{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .card{
+    padding:16px;
+  }
+}
+
 @media print{
-  @page{margin:10mm}
-  body{background:#fff;padding:0}
-  .container>*:not(#receiptPrint){display:none!important}
-  #receiptPrint{box-shadow:none;padding:0;margin:0}
-  .no-print{display:none!important}
+  body{
+    background:white;
+    padding:0;
+  }
+
+  body *{
+    visibility:hidden;
+  }
+
+  #receiptPrint,
+  #receiptPrint *{
+    visibility:visible;
+  }
+
+  #receiptPrint{
+    position:absolute;
+    left:0;
+    top:0;
+    width:100%;
+  }
+
+  .no-print{
+    display:none!important;
+  }
 }
 </style>
 </head>
+
 <body>
+
 <div class="container">
+
+<!-- ==================================================
+     BRAND
+================================================== -->
 
 <div class="card">
   <div class="logo">SK COMPUTER</div>
-  <div class="subtitle">आपले सरकार व डिजिटल सेवा केंद्र, एकनाथवाडी</div>
-  <div class="center"><a class="wa-link" href="https://wa.me/918888146077" target="_blank" rel="noopener">💬 WhatsApp वर संपर्क करा</a></div>
+  <div class="subtitle">ग्राहक सेवा आणि डिजिटल सेवा पोर्टल</div>
 </div>
 
-<!-- AUTH -->
+
+<!-- ==================================================
+     AUTH SECTION
+================================================== -->
+
 <section id="authSection" class="card">
+
   <h2 id="authTitle" class="center">ग्राहक लॉगिन</h2>
+
   <div class="form-grid">
-    <div class="full"><label>ईमेल पत्ता</label><input type="email" id="email" placeholder="example@gmail.com" autocomplete="email"></div>
-    <div class="full"><label>पासवर्ड</label><input type="password" id="password" placeholder="तुमचा पासवर्ड" autocomplete="current-password"></div>
+
+    <div class="full">
+      <label>ईमेल पत्ता</label>
+      <input
+        type="email"
+        id="email"
+        placeholder="example@gmail.com"
+        autocomplete="email"
+      >
+    </div>
+
+    <div class="full">
+      <label>पासवर्ड</label>
+      <input
+        type="password"
+        id="password"
+        placeholder="तुमचा पासवर्ड"
+        autocomplete="current-password"
+      >
+    </div>
+
   </div>
+
   <button id="loginBtn">लॉगिन करा</button>
-  <button id="registerBtn" class="btn-green hidden">नवीन खाते तयार करा</button>
-  <button id="resetBtn" class="btn-gray hidden">पासवर्ड रीसेट ईमेल पाठवा</button>
-  <div class="link"><span id="toggleText">खाते नाही का?</span> <a id="toggleAuth">येथे नोंदणी करा</a></div>
-  <div class="link" id="forgotBox"><a id="forgotPassword">पासवर्ड विसरलात?</a></div>
+
+  <button id="registerBtn" class="btn-green hidden">
+    नवीन खाते तयार करा
+  </button>
+
+  <button id="resetBtn" class="btn-gray hidden">
+    Password Reset Email पाठवा
+  </button>
+
+  <div class="link">
+    <span id="toggleText">खाते नाही का?</span>
+    <a id="toggleAuth">येथे नोंदणी करा</a>
+  </div>
+
+  <div class="link" id="forgotBox">
+    <a id="forgotPassword">पासवर्ड विसरलात?</a>
+  </div>
+
   <p id="authMsg" class="msg"></p>
+
 </section>
 
-<!-- SERVICES -->
-<section id="servicesCard" class="card">
-  <h3>आमच्या सेवा व लागणारी कागदपत्रे</h3>
-  <div id="serviceList"></div>
-  <small style="color:var(--gray)">कागदपत्रे योजनेनुसार बदलू शकतात. खात्रीसाठी WhatsApp वर विचारा.</small>
-</section>
 
-<!-- CUSTOMER -->
+<!-- ==================================================
+     CUSTOMER DASHBOARD
+================================================== -->
+
 <section id="customerSection" class="hidden">
+
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-      <div><h2>ग्राहक डॅशबोर्ड</h2><div class="user-box">ईमेल: <b id="customerEmail"></b></div></div>
-      <button id="customerLogout" class="btn-red">Logout</button>
+
+    <div class="dashboard-header">
+
+      <div>
+        <h2>ग्राहक डॅशबोर्ड</h2>
+        <div class="user-box">
+          ईमेल:
+          <b id="customerEmail"></b>
+        </div>
+      </div>
+
+      <button id="customerLogout" class="btn-red">
+        Logout
+      </button>
+
     </div>
 
     <div id="verifyBox" class="verify hidden">
-      तुमचा ईमेल अजून व्हेरिफाय झालेला नाही. ईमेलमधील लिंकवर क्लिक करा, मग खालील बटन दाबा.
-      <div class="actions">
-        <button id="verifyCheck" class="btn-green btn-small">मी व्हेरिफाय केले</button>
-        <button id="verifyResend" class="btn-gray btn-small">पुन्हा ईमेल पाठवा</button>
-      </div>
+
+      <b>तुमचा Email Verify झालेला नाही.</b>
+
+      <br>
+
+      <button id="verifyBtn" class="btn-gray">
+        Verification Email पाठवा
+      </button>
+
     </div>
 
+
+    <!-- CUSTOMER STATUS -->
+
     <div class="customer-card">
+
+      <h3>माझ्या कामाची माहिती</h3>
+
+      <div class="form-grid">
+
+        <div>
+          <label>कामाचा Status</label>
+          <div id="customerStatus"></div>
+        </div>
+
+        <div>
+          <label>Payment Status</label>
+          <div id="customerPaymentStatus"></div>
+        </div>
+
+        <div>
+          <label>एकूण रक्कम</label>
+          <input id="customerTotal" readonly>
+        </div>
+
+        <div>
+          <label>भरलेली रक्कम</label>
+          <input id="customerPaid" readonly>
+        </div>
+
+        <div class="full">
+          <label>बाकी रक्कम</label>
+          <input id="customerBalance" readonly>
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- CUSTOMER PROFILE -->
+
+    <div class="customer-card">
+
       <h3>माझी माहिती</h3>
-      <div class="form-grid">
-        <div><label>पूर्ण नाव</label><input id="pName"></div>
-        <div><label>मोबाईल नंबर</label><input id="pPhone" maxlength="10" inputmode="numeric" placeholder="10 अंकी"></div>
-        <div class="full"><label>पत्ता</label><textarea id="pAddress" rows="2"></textarea></div>
-      </div>
-      <button id="saveProfile" class="btn-green">माहिती Save करा</button>
-    </div>
 
-    <div class="customer-card">
-      <h3>नवीन काम नोंदवा</h3>
       <div class="form-grid">
-        <div class="full"><label>सेवा</label><select id="jService"></select></div>
-        <div class="full"><label>कामाचे तपशील</label><textarea id="jDetails" rows="2"></textarea></div>
-        <div class="full"><label>कागदपत्र (फोटो / PDF - कमाल ५ MB)</label><input type="file" id="jFile" accept="image/*,application/pdf"></div>
+
+        <div>
+          <label>पूर्ण नाव</label>
+          <input id="name" placeholder="पूर्ण नाव">
+        </div>
+
+        <div>
+          <label>मोबाईल नंबर</label>
+          <input
+            id="phone"
+            maxlength="10"
+            inputmode="numeric"
+            placeholder="10 अंकी मोबाईल नंबर"
+          >
+        </div>
+
+        <div class="full">
+          <label>पत्ता</label>
+          <textarea id="address" rows="2"></textarea>
+        </div>
+
+        <div class="full">
+          <label>कामाचे तपशील</label>
+          <textarea
+            id="details"
+            rows="3"
+            placeholder="उदा. PAN Card, Online Form, Printing..."
+          ></textarea>
+        </div>
+
       </div>
-      <button id="addJob" class="btn-green">काम नोंदवा</button>
+
+      <button id="saveCustomer" class="btn-green">
+        माहिती Save करा
+      </button>
+
       <p id="customerMsg" class="msg"></p>
+
     </div>
 
-    <h3>माझी कामे</h3>
-    <div id="myJobs"></div>
   </div>
+
 </section>
 
-<!-- ADMIN -->
+
+<!-- ==================================================
+     ADMIN PANEL
+================================================== -->
+
 <section id="adminSection" class="hidden">
+
   <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-      <div><h2>SK Computer Admin Panel</h2><div class="user-box">Admin: <b id="adminEmail"></b></div></div>
-      <button id="adminLogout" class="btn-red">Logout</button>
+
+    <div class="dashboard-header">
+
+      <div>
+        <h2>SK Computer Admin Panel</h2>
+        <div class="user-box">
+          Admin:
+          <b id="adminEmail"></b>
+        </div>
+      </div>
+
+      <button id="adminLogout" class="btn-red">
+        Logout
+      </button>
+
     </div>
+
+
+    <!-- STATS -->
+
     <div class="stats">
-      <div class="stat">एकूण कामे<b id="statTotal">0</b></div>
-      <div class="stat">Pending<b id="statPending">0</b></div>
-      <div class="stat">Processing<b id="statProcessing">0</b></div>
-      <div class="stat">Completed<b id="statCompleted">0</b></div>
+
+      <div class="stat">
+        Total Customers
+        <b id="statTotal">0</b>
+      </div>
+
+      <div class="stat">
+        Pending
+        <b id="statPending">0</b>
+      </div>
+
+      <div class="stat">
+        Processing
+        <b id="statProcessing">0</b>
+      </div>
+
+      <div class="stat">
+        Completed
+        <b id="statCompleted">0</b>
+      </div>
+
     </div>
+
+
+    <!-- SEARCH -->
+
     <div class="form-grid">
-      <div><label>शोधा</label><input id="adminSearch" placeholder="नाव / मोबाईल / काम"></div>
-      <div><label>Status Filter</label>
-        <select id="statusFilter"><option value="all">सर्व</option><option>Pending</option><option>Processing</option><option>Completed</option><option>Cancelled</option></select>
+
+      <div>
+        <label>Customer Search</label>
+        <input
+          id="adminSearch"
+          placeholder="नाव / मोबाईल / ईमेल शोधा"
+        >
       </div>
+
+      <div>
+        <label>Status Filter</label>
+        <select id="statusFilter">
+
+          <option value="all">सर्व Status</option>
+          <option value="Pending">Pending</option>
+          <option value="Processing">Processing</option>
+          <option value="Completed">Completed</option>
+          <option value="Cancelled">Cancelled</option>
+
+        </select>
+      </div>
+
     </div>
-    <div class="actions">
-      <button id="newJobBtn" class="btn-green">➕ नवीन जॉब कार्ड</button>
-      <button id="refreshJobs" class="btn-dark">Refresh</button>
-    </div>
+
+    <button id="refreshCustomers" class="btn-dark">
+      Customer List Refresh करा
+    </button>
+
     <p id="adminMsg" class="msg"></p>
+
   </div>
-  <div class="card"><h3>कामांची यादी</h3><div id="jobList"></div></div>
+
+
+  <!-- CUSTOMER LIST -->
+
+  <div class="card">
+
+    <h3>Customer List</h3>
+
+    <div id="customerList"></div>
+
+  </div>
+
 </section>
 
-<!-- ADMIN EDITOR -->
+
+<!-- ==================================================
+     ADMIN CUSTOMER EDIT MODAL AREA
+================================================== -->
+
 <section id="adminEditor" class="card hidden">
-  <h2 id="editTitle">जॉब कार्ड</h2>
+
+  <h2>Customer Work Management</h2>
+
+  <div class="user-box">
+    Customer UID:
+    <b id="editUid"></b>
+  </div>
+
   <div class="form-grid">
-    <div><label>ग्राहकाचे नाव</label><input id="eName"></div>
-    <div><label>मोबाईल</label><input id="ePhone" maxlength="10" inputmode="numeric"></div>
-    <div><label>सेवा</label><select id="eService"></select></div>
-    <div><label>Status</label>
-      <select id="eStatus"><option>Pending</option><option>Processing</option><option>Completed</option><option>Cancelled</option></select>
+
+    <div>
+      <label>ग्राहकाचे नाव</label>
+      <input id="editName">
     </div>
-    <div class="full"><label>कामाचे तपशील</label><textarea id="eDetails" rows="2"></textarea></div>
-    <div class="full"><label>Admin Notes</label><textarea id="eNotes" rows="2"></textarea></div>
-    <div><label>एकूण रक्कम (₹)</label><input id="eTotal" type="number" min="0" step="0.01"></div>
-    <div><label>हिशोब</label><div id="eCalc" class="user-box" style="margin:0"></div></div>
-    <div class="full" id="eDoc"></div>
+
+    <div>
+      <label>मोबाईल</label>
+      <input id="editPhone">
+    </div>
+
+    <div>
+      <label>Email</label>
+      <input id="editEmail" readonly>
+    </div>
+
+    <div>
+      <label>Work Status</label>
+
+      <select id="editStatus">
+
+        <option value="Pending">Pending</option>
+        <option value="Processing">Processing</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+
+      </select>
+
+    </div>
+
     <div class="full">
-      <label>पेमेंट इतिहास</label>
-      <div id="ePayList"></div>
-      <div class="form-grid" style="margin-top:8px">
-        <input id="payAmt" type="number" min="0" step="0.01" placeholder="नवीन पेमेंट ₹">
-        <select id="payMode"><option>रोख</option><option>UPI</option><option>इतर</option></select>
-      </div>
-      <button id="payAdd" class="btn-orange btn-small">➕ पेमेंट जोडा</button>
+      <label>कामाचे तपशील</label>
+      <textarea id="editDetails" rows="3"></textarea>
     </div>
+
+    <div class="full">
+      <label>Admin Notes</label>
+      <textarea
+        id="editAdminNotes"
+        rows="3"
+        placeholder="Admin साठी नोंद..."
+      ></textarea>
+    </div>
+
+    <div>
+      <label>Total Amount</label>
+      <input
+        id="editTotal"
+        type="number"
+        min="0"
+        step="0.01"
+      >
+    </div>
+
+    <div>
+      <label>Paid Amount</label>
+      <input
+        id="editPaid"
+        type="number"
+        min="0"
+        step="0.01"
+      >
+    </div>
+
+    <div>
+      <label>Payment Status</label>
+
+      <select id="editPaymentStatus">
+
+        <option value="Unpaid">Unpaid</option>
+        <option value="Partial">Partial</option>
+        <option value="Paid">Paid</option>
+
+      </select>
+
+    </div>
+
   </div>
-  <div class="actions" style="margin-top:15px">
-    <button id="saveJob" class="btn-green">Save</button>
-    <button id="waBtn" class="btn-green">WhatsApp पाठवा</button>
-    <button id="receiptBtn" class="btn-orange">पावती</button>
-    <button id="closeEditor" class="btn-gray">Close</button>
+
+  <div class="actions">
+
+    <button id="saveAdminCustomer" class="btn-green">
+      Customer माहिती Save
+    </button>
+
+    <button id="whatsappBtn" class="btn-green">
+      WhatsApp
+    </button>
+
+    <button id="receiptBtn" class="btn-orange">
+      Receipt
+    </button>
+
+    <button id="closeEditor" class="btn-gray">
+      Close
+    </button>
+
   </div>
+
   <p id="editorMsg" class="msg"></p>
+
 </section>
 
-<!-- RECEIPT -->
+
+<!-- ==================================================
+     RECEIPT
+================================================== -->
+
 <section id="receiptPrint" class="card hidden">
-  <div class="receipt" id="receiptBox">
+
+  <div class="receipt">
+
     <div class="receipt-header">
+
       <h2>SK COMPUTER</h2>
-      <div>आपले सरकार व डिजिटल सेवा केंद्र, एकनाथवाडी (पाथर्डी)</div>
-      <div>मो: 8888146077 | <b>पेमेंट पावती</b></div>
+
+      <div>
+        ग्राहक सेवा केंद्र
+      </div>
+
+      <div>
+        Payment Receipt
+      </div>
+
     </div>
-    <div class="receipt-row"><b>पावती क्र.</b><span id="rNo"></span></div>
-    <div class="receipt-row"><b>दिनांक</b><span id="rDate"></span></div>
-    <div class="receipt-row"><b>ग्राहक</b><span id="rName"></span></div>
-    <div class="receipt-row"><b>मोबाईल</b><span id="rPhone"></span></div>
-    <div class="receipt-row"><b>काम</b><span id="rWork"></span></div>
-    <div style="margin-top:10px"><b>पेमेंट तपशील</b><div id="rPays"></div></div>
+
+    <div class="receipt-row">
+      <b>Receipt No.</b>
+      <span id="receiptNo"></span>
+    </div>
+
+    <div class="receipt-row">
+      <b>Date</b>
+      <span id="receiptDate"></span>
+    </div>
+
+    <div class="receipt-row">
+      <b>Customer</b>
+      <span id="receiptName"></span>
+    </div>
+
+    <div class="receipt-row">
+      <b>Mobile</b>
+      <span id="receiptPhone"></span>
+    </div>
+
+    <div class="receipt-row">
+      <b>Work</b>
+      <span id="receiptWork"></span>
+    </div>
+
     <div class="amount-box">
-      <div class="receipt-row"><b>एकूण रक्कम</b><span id="rTotal"></span></div>
-      <div class="receipt-row"><b>भरलेली रक्कम</b><span id="rPaid"></span></div>
-      <div class="receipt-row"><b>शिल्लक रक्कम</b><span id="rBal"></span></div>
+
+      <div class="receipt-row">
+        <b>Total Amount</b>
+        <span id="receiptTotal"></span>
+      </div>
+
+      <div class="receipt-row">
+        <b>Paid Amount</b>
+        <span id="receiptPaid"></span>
+      </div>
+
+      <div class="receipt-row">
+        <b>Balance</b>
+        <span id="receiptBalance"></span>
+      </div>
+
     </div>
-    <div id="rQrBox" class="qr-container hidden"><div id="rQr"></div><small style="margin-top:5px">शिल्लक रक्कम भरण्यासाठी कोड स्कॅन करा</small></div>
-    <div class="sign"><span>ग्राहकाची सही</span><span>SK Computer (सही / शिक्का)</span></div>
-    <div class="center" style="margin-top:12px">धन्यवाद!</div>
+
+    <br>
+
+    <div class="center">
+      धन्यवाद! SK Computer
+    </div>
+
   </div>
-  <div class="actions no-print" style="margin-top:15px">
-    <button id="printA4" class="btn-dark">A4 प्रिंट</button>
-    <button id="printSmall" class="btn-dark">छोटी पावती प्रिंट</button>
-    <button id="closeReceipt" class="btn-gray">Close</button>
+
+  <div class="actions no-print">
+
+    <button onclick="window.print()" class="btn-dark">
+      Print Receipt
+    </button>
+
+    <button id="closeReceipt" class="btn-gray">
+      Close
+    </button>
+
   </div>
+
 </section>
 
 </div>
 
+
+<!-- ==================================================
+     FIREBASE
+================================================== -->
+
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, collection, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
-import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-storage.js";
-import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
 
-const SHOP_UPI_ID = "santoshkhedkar@ybl";
-const SHOP_NAME = "SK Computer";
-const SHOP_WA = "918888146077";
+import {
+  initializeApp
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 
-const SERVICES = [
-  ["पॅन कार्ड", "आधार कार्ड, फोटो, सही"],
-  ["आधार दुरुस्ती / अपडेट", "आधार कार्ड, पुरावा कागदपत्र"],
-  ["मतदार कार्ड", "आधार कार्ड, फोटो, वयाचा/पत्त्याचा पुरावा"],
-  ["ड्रायव्हिंग लायसन्स", "आधार कार्ड, फोटो, पत्त्याचा पुरावा"],
-  ["उत्पन्न दाखला", "आधार कार्ड, रेशन कार्ड, उत्पन्नाचा पुरावा"],
-  ["जात प्रमाणपत्र", "आधार कार्ड, शाळा सोडल्याचा दाखला, वडिलांचे कागदपत्र"],
-  ["७/१२ / ८अ उतारा", "गट/सर्व्हे नंबर माहिती"],
-  ["रेशन कार्ड", "आधार कार्ड सर्व सदस्यांचे, फोटो"],
-  ["ऑनलाइन फॉर्म / अर्ज", "संबंधित कागदपत्रे, आधार, मोबाईल नंबर"],
-  ["झेरॉक्स / प्रिंट / स्कॅन", "मूळ कागदपत्र"],
-  ["इतर", "कामाची माहिती लिहा"]
-];
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
-const app = initializeApp({
-  apiKey: "AIzaSyCguRWlUD0XhbTT-t90qxmhVMKRe-j09b8",
-  authDomain: "sk-computer-53668.firebaseapp.com",
-  projectId: "sk-computer-53668",
-  storageBucket: "sk-computer-53668.firebasestorage.app",
-  messagingSenderId: "181873271339",
-  appId: "1:181873271339:web:b22202fac5706669e8406e",
-  measurementId: "G-SH186W2EVD"
-});
-const auth = getAuth(app), db = getFirestore(app), storage = getStorage(app);
-isSupported().then(ok => { if(ok) getAnalytics(app); }).catch(() => {});
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  collection,
+  getDocs,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
-const $ = id => document.getElementById(id);
-let registerMode = false, isAdmin = false, allJobs = [], sel = null, editPays = [];
 
-// ---------- Helpers ----------
-const num = v => parseFloat(v) || 0;
-const money = n => "₹" + num(n).toFixed(2);
-const fmtDate = d => new Date(d).toLocaleDateString("en-IN");
-function esc(v){ return String(v ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[m]); }
-function safeUrl(u){ try{ const x = new URL(u); return x.protocol === "https:" ? x.href : ""; }catch(e){ return ""; } }
-function message(el, text, type = "info"){ if(el){ el.textContent = text; el.className = "msg " + type; } }
-function calc(j){
-  const total = num(j.totalAmount), pays = j.payments || [];
-  const paid = pays.reduce((a, p) => a + num(p.amt), 0);
-  return { total, paid, pays, bal: Math.max(total - paid, 0), ps: total > 0 && paid >= total ? "Paid" : paid > 0 ? "Partial" : "Unpaid" };
+/* ==================================================
+   FIREBASE CONFIG
+================================================== */
+
+const firebaseConfig = {
+
+  apiKey:
+    "AIzaSyCguRWlUD0XhbTT-t90qxmhVMKRe-j09b8",
+
+  authDomain:
+    "sk-computer-53668.firebaseapp.com",
+
+  projectId:
+    "sk-computer-53668",
+
+  storageBucket:
+    "sk-computer-53668.firebasestorage.app",
+
+  messagingSenderId:
+    "181873271339",
+
+  appId:
+    "1:181873271339:web:b22202fac5706669e8406e",
+
+  measurementId:
+    "G-SH186W2EVD"
+
+};
+
+
+const app = initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+
+const db = getFirestore(app);
+
+
+/* ==================================================
+   ELEMENTS
+================================================== */
+
+const authSection =
+  document.getElementById("authSection");
+
+const customerSection =
+  document.getElementById("customerSection");
+
+const adminSection =
+  document.getElementById("adminSection");
+
+const adminEditor =
+  document.getElementById("adminEditor");
+
+const receiptPrint =
+  document.getElementById("receiptPrint");
+
+
+let registerMode = false;
+
+let allCustomers = [];
+
+let selectedCustomer = null;
+
+
+/* ==================================================
+   AUTH ELEMENTS
+================================================== */
+
+const emailInput =
+  document.getElementById("email");
+
+const passwordInput =
+  document.getElementById("password");
+
+const loginBtn =
+  document.getElementById("loginBtn");
+
+const registerBtn =
+  document.getElementById("registerBtn");
+
+const resetBtn =
+  document.getElementById("resetBtn");
+
+const toggleAuth =
+  document.getElementById("toggleAuth");
+
+const toggleText =
+  document.getElementById("toggleText");
+
+const forgotPassword =
+  document.getElementById("forgotPassword");
+
+const forgotBox =
+  document.getElementById("forgotBox");
+
+const authMsg =
+  document.getElementById("authMsg");
+
+
+/* ==================================================
+   CUSTOMER ELEMENTS
+================================================== */
+
+const customerEmail =
+  document.getElementById("customerEmail");
+
+const verifyBox =
+  document.getElementById("verifyBox");
+
+const verifyBtn =
+  document.getElementById("verifyBtn");
+
+const nameInput =
+  document.getElementById("name");
+
+const phoneInput =
+  document.getElementById("phone");
+
+const addressInput =
+  document.getElementById("address");
+
+const detailsInput =
+  document.getElementById("details");
+
+const saveCustomer =
+  document.getElementById("saveCustomer");
+
+const customerLogout =
+  document.getElementById("customerLogout");
+
+const customerMsg =
+  document.getElementById("customerMsg");
+
+const customerStatus =
+  document.getElementById("customerStatus");
+
+const customerPaymentStatus =
+  document.getElementById("customerPaymentStatus");
+
+const customerTotal =
+  document.getElementById("customerTotal");
+
+const customerPaid =
+  document.getElementById("customerPaid");
+
+const customerBalance =
+  document.getElementById("customerBalance");
+
+
+/* ==================================================
+   ADMIN ELEMENTS
+================================================== */
+
+const adminEmail =
+  document.getElementById("adminEmail");
+
+const adminLogout =
+  document.getElementById("adminLogout");
+
+const adminSearch =
+  document.getElementById("adminSearch");
+
+const statusFilter =
+  document.getElementById("statusFilter");
+
+const refreshCustomers =
+  document.getElementById("refreshCustomers");
+
+const customerList =
+  document.getElementById("customerList");
+
+const adminMsg =
+  document.getElementById("adminMsg");
+
+const statTotal =
+  document.getElementById("statTotal");
+
+const statPending =
+  document.getElementById("statPending");
+
+const statProcessing =
+  document.getElementById("statProcessing");
+
+const statCompleted =
+  document.getElementById("statCompleted");
+
+
+/* ==================================================
+   ADMIN EDITOR
+================================================== */
+
+const editUid =
+  document.getElementById("editUid");
+
+const editName =
+  document.getElementById("editName");
+
+const editPhone =
+  document.getElementById("editPhone");
+
+const editEmail =
+  document.getElementById("editEmail");
+
+const editStatus =
+  document.getElementById("editStatus");
+
+const editDetails =
+  document.getElementById("editDetails");
+
+const editAdminNotes =
+  document.getElementById("editAdminNotes");
+
+const editTotal =
+  document.getElementById("editTotal");
+
+const editPaid =
+  document.getElementById("editPaid");
+
+const editPaymentStatus =
+  document.getElementById("editPaymentStatus");
+
+const saveAdminCustomer =
+  document.getElementById("saveAdminCustomer");
+
+const whatsappBtn =
+  document.getElementById("whatsappBtn");
+
+const receiptBtn =
+  document.getElementById("receiptBtn");
+
+const closeEditor =
+  document.getElementById("closeEditor");
+
+const editorMsg =
+  document.getElementById("editorMsg");
+
+
+/* ==================================================
+   MESSAGE
+================================================== */
+
+function message(element, text, type="info") {
+
+  element.textContent = text;
+
+  element.className =
+    "msg " + type;
+
 }
-function statusBadge(s){
-  const m = { Pending:"status-pending", Processing:"status-processing", Completed:"status-completed", Cancelled:"status-cancelled" };
-  return `<span class="status-badge ${m[s] || "status-pending"}">${esc(s)}</span>`;
-}
-function paymentBadge(s){
-  const m = { Unpaid:"status-cancelled", Partial:"status-pending", Paid:"status-completed" };
-  return `<span class="status-badge ${m[s] || "status-cancelled"}">${esc(s)}</span>`;
-}
-function firebaseError(c){
-  return ({
-    "auth/invalid-credential":"ईमेल किंवा पासवर्ड चुकीचा आहे.",
-    "auth/email-already-in-use":"हा ईमेल आधीच नोंदणीकृत आहे.",
-    "auth/weak-password":"पासवर्ड किमान ६ अक्षरांचा असावा.",
-    "auth/invalid-email":"ईमेल पत्ता योग्य नाही.",
-    "auth/user-not-found":"या ईमेलने खाते सापडले नाही.",
-    "auth/missing-password":"पासवर्ड टाका.",
-    "auth/too-many-requests":"खूप प्रयत्न झाले. थोड्या वेळाने पुन्हा प्रयत्न करा.",
-    "auth/network-request-failed":"इंटरनेट कनेक्शन तपासा.",
-    "permission-denied":"परवानगी नाही. (ईमेल व्हेरिफाय केला आहे का? Rules तपासा.)",
-    "app/bad-file":"फक्त फोटो किंवा PDF फाइल चालेल.",
-    "storage/unauthorized":"फाइल अपलोड परवानगी नाकारली गेली."
-  })[c] || "काहीतरी त्रुटी आली. पुन्हा प्रयत्न करा.";
-}
-function renderQr(id, amount, note = "SK Computer Payment", size = 120){
-  const t = $(id); if(!t) return;
-  t.innerHTML = "";
-  if(amount <= 0 || typeof QRCode === "undefined") return;
-  const tn = String(note).replace(/[^\x20-\x7E]/g, "").trim() || "SK Computer Payment";
-  const url = `upi://pay?pa=${encodeURIComponent(SHOP_UPI_ID)}&pn=${encodeURIComponent(SHOP_NAME)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(tn)}`;
-  try{ new QRCode(t, { text:url, width:size, height:size, correctLevel:QRCode.CorrectLevel.M }); }catch(e){ console.warn(e); }
-}
-const payHtml = pays => (pays || []).map(p => `<div class="pay-row"><span>${fmtDate(p.date)} • ${esc(p.mode)}</span><b>${money(p.amt)}</b></div>`).join("") || `<small style="color:var(--gray)">अजून पेमेंट नाही</small>`;
-function digitsOnly(...els){ els.forEach(i => i.addEventListener("input", () => { i.value = i.value.replace(/\D/g, "").slice(0, 10); })); }
 
-// ---------- Static UI ----------
-$("serviceList").innerHTML = SERVICES.map(([n, d]) => `<details><summary>${esc(n)}</summary><div style="margin-top:6px">लागणारी कागदपत्रे: ${esc(d)}</div></details>`).join("");
-const svcOptions = SERVICES.map(([n]) => `<option>${esc(n)}</option>`).join("");
-$("jService").innerHTML = svcOptions; $("eService").innerHTML = svcOptions;
-digitsOnly($("pPhone"), $("ePhone"));
 
-// ---------- Auth ----------
-$("password").addEventListener("keydown", e => { if(e.key === "Enter") (registerMode ? $("registerBtn") : $("loginBtn")).click(); });
-$("toggleAuth").addEventListener("click", () => {
-  registerMode = !registerMode;
-  $("authMsg").textContent = "";
-  $("authTitle").textContent = registerMode ? "नवीन ग्राहक नोंदणी" : "ग्राहक लॉगिन";
-  $("loginBtn").classList.toggle("hidden", registerMode);
-  $("registerBtn").classList.toggle("hidden", !registerMode);
-  $("resetBtn").classList.add("hidden");
-  $("forgotBox").classList.toggle("hidden", registerMode);
-  $("toggleText").textContent = registerMode ? "आधीच खाते आहे का?" : "खाते नाही का?";
-  $("toggleAuth").textContent = registerMode ? "लॉगिन करा" : "येथे नोंदणी करा";
-});
-$("registerBtn").addEventListener("click", async () => {
-  const email = $("email").value.trim(), pw = $("password").value;
-  if(!email || pw.length < 6){ message($("authMsg"), "योग्य ईमेल आणि किमान ६ अक्षरांचा पासवर्ड टाका.", "error"); return; }
-  $("registerBtn").disabled = true;
-  try{
-    const r = await createUserWithEmailAndPassword(auth, email, pw);
-    await sendEmailVerification(r.user);
-  }catch(err){ message($("authMsg"), firebaseError(err.code), "error"); }
-  finally{ $("registerBtn").disabled = false; }
-});
-$("loginBtn").addEventListener("click", async () => {
-  const email = $("email").value.trim(), pw = $("password").value;
-  if(!email || !pw){ message($("authMsg"), "ईमेल आणि पासवर्ड भरा.", "error"); return; }
-  $("loginBtn").disabled = true;
-  try{ await signInWithEmailAndPassword(auth, email, pw); }
-  catch(err){ message($("authMsg"), firebaseError(err.code), "error"); }
-  finally{ $("loginBtn").disabled = false; }
-});
-$("forgotPassword").addEventListener("click", () => {
-  $("resetBtn").classList.remove("hidden");
-  message($("authMsg"), "ईमेल टाकून रीसेट बटनावर क्लिक करा.", "info");
-});
-$("resetBtn").addEventListener("click", async () => {
-  const email = $("email").value.trim();
-  if(!email){ message($("authMsg"), "प्रथम ईमेल लिहा.", "error"); return; }
-  try{ await sendPasswordResetEmail(auth, email); message($("authMsg"), "रीसेट लिंक पाठवली आहे.", "success"); }
-  catch(err){ message($("authMsg"), firebaseError(err.code), "error"); }
-});
-$("customerLogout").addEventListener("click", () => signOut(auth));
-$("adminLogout").addEventListener("click", () => signOut(auth));
+/* ==================================================
+   AUTH MODE
+================================================== */
 
-function hideAll(){ ["authSection","customerSection","adminSection","adminEditor","receiptPrint"].forEach(i => $(i).classList.add("hidden")); }
-function resetState(){
-  allJobs = []; sel = null; editPays = []; isAdmin = false;
-  ["pName","pPhone","pAddress","jDetails","jFile","password"].forEach(i => $(i).value = "");
-  ["myJobs","jobList","rQr","ePayList"].forEach(i => $(i).innerHTML = "");
-  ["customerMsg","adminMsg","editorMsg"].forEach(i => message($(i), ""));
-}
+toggleAuth.addEventListener(
+  "click",
+  () => {
 
-onAuthStateChanged(auth, async user => {
-  hideAll(); resetState();
-  $("servicesCard").classList.remove("hidden");
-  if(!user){ $("authSection").classList.remove("hidden"); return; }
-  try{
-    const adminSnap = await getDoc(doc(db, "admins", user.uid));
-    if(adminSnap.exists()){
-      isAdmin = true;
-      $("servicesCard").classList.add("hidden");
-      $("adminSection").classList.remove("hidden");
-      $("adminEmail").textContent = user.email || "";
-      await loadJobs();
+    registerMode =
+      !registerMode;
+
+    if(registerMode){
+
+      document.getElementById("authTitle")
+        .textContent =
+        "नवीन ग्राहक नोंदणी";
+
+      loginBtn.classList.add("hidden");
+
+      registerBtn.classList.remove("hidden");
+
+      forgotBox.classList.add("hidden");
+
+      toggleText.textContent =
+        "आधीच खाते आहे का?";
+
+      toggleAuth.textContent =
+        "लॉगिन करा";
+
+    }else{
+
+      document.getElementById("authTitle")
+        .textContent =
+        "ग्राहक लॉगिन";
+
+      loginBtn.classList.remove("hidden");
+
+      registerBtn.classList.add("hidden");
+
+      resetBtn.classList.add("hidden");
+
+      forgotBox.classList.remove("hidden");
+
+      toggleText.textContent =
+        "खाते नाही का?";
+
+      toggleAuth.textContent =
+        "येथे नोंदणी करा";
+
+    }
+
+  }
+);
+
+
+/* ==================================================
+   REGISTER
+================================================== */
+
+registerBtn.addEventListener(
+  "click",
+  async () => {
+
+    const email =
+      emailInput.value.trim();
+
+    const password =
+      passwordInput.value;
+
+    if(!email || !password){
+
+      message(
+        authMsg,
+        "कृपया ईमेल आणि पासवर्ड भरा.",
+        "error"
+      );
+
       return;
     }
-    $("customerSection").classList.remove("hidden");
-    $("customerEmail").textContent = user.email || "";
-    $("verifyBox").classList.toggle("hidden", user.emailVerified);
-    await loadProfile(user.uid);
-    await loadJobs();
-  }catch(err){
-    $("authSection").classList.remove("hidden");
-    message($("authMsg"), "डेटाबेस लोड करताना त्रुटी आली.", "error");
+
+    if(password.length < 6){
+
+      message(
+        authMsg,
+        "पासवर्ड किमान 6 अक्षरांचा असावा.",
+        "error"
+      );
+
+      return;
+    }
+
+    registerBtn.disabled = true;
+
+    try{
+
+      const result =
+        await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
+
+      await sendEmailVerification(
+        result.user
+      );
+
+      message(
+        authMsg,
+        "खाते तयार झाले. Verification Email तपासा.",
+        "success"
+      );
+
+    }catch(error){
+
+      message(
+        authMsg,
+        firebaseError(error.code),
+        "error"
+      );
+
+    }finally{
+
+      registerBtn.disabled = false;
+
+    }
+
   }
-});
+);
 
-// ---------- Customer ----------
-$("verifyResend").addEventListener("click", async () => {
-  try{ await sendEmailVerification(auth.currentUser); message($("customerMsg"), "व्हेरिफिकेशन ईमेल पाठवला.", "success"); }
-  catch(e){ message($("customerMsg"), firebaseError(e.code), "error"); }
-});
-$("verifyCheck").addEventListener("click", async () => {
-  await auth.currentUser.reload();
-  await auth.currentUser.getIdToken(true);
-  if(auth.currentUser.emailVerified){ $("verifyBox").classList.add("hidden"); message($("customerMsg"), "ईमेल व्हेरिफाय झाला!", "success"); }
-  else message($("customerMsg"), "अजून व्हेरिफाय झालेला नाही.", "error");
-});
-async function loadProfile(uid){
-  const s = await getDoc(doc(db, "customers", uid));
-  if(!s.exists()) return;
-  const d = s.data();
-  $("pName").value = d.name || ""; $("pPhone").value = d.phone || ""; $("pAddress").value = d.address || "";
-}
-function profileData(){
-  const name = $("pName").value.trim(), phone = $("pPhone").value.trim(), address = $("pAddress").value.trim();
-  if(!auth.currentUser.emailVerified){ message($("customerMsg"), "प्रथम ईमेल व्हेरिफाय करा.", "error"); return null; }
-  if(!name){ message($("customerMsg"), "कृपया पूर्ण नाव टाका.", "error"); return null; }
-  if(!/^[0-9]{10}$/.test(phone)){ message($("customerMsg"), "मोबाईल नंबर १० अंकी असावा.", "error"); return null; }
-  return { name, phone, address };
-}
-async function saveProfileDoc(p){
-  const u = auth.currentUser;
-  await setDoc(doc(db, "customers", u.uid), { ...p, email: u.email || "", updatedAt: serverTimestamp() });
-}
-$("saveProfile").addEventListener("click", async () => {
-  const p = profileData(); if(!p) return;
-  try{ await saveProfileDoc(p); message($("customerMsg"), "माहिती सेव्ह झाली!", "success"); }
-  catch(e){ message($("customerMsg"), firebaseError(e.code), "error"); }
-});
-$("addJob").addEventListener("click", async () => {
-  const p = profileData(); if(!p) return;
-  const u = auth.currentUser, file = $("jFile").files[0], details = $("jDetails").value.trim();
-  if(file && file.size > 5 * 1024 * 1024){ message($("customerMsg"), "फाइल ५ MB पेक्षा कमी असावी.", "error"); return; }
-  $("addJob").disabled = true;
-  message($("customerMsg"), "काम नोंदवत आहे...", "info");
-  try{
-    let documentUrl = "";
-    if(file){
-      if(!(file.type.startsWith("image/") || file.type === "application/pdf")) throw { code:"app/bad-file" };
-      const safeName = file.name.replace(/[^\w.\-]+/g, "_").slice(-80);
-      const r = await uploadBytes(sRef(storage, `customer_docs/${u.uid}/${Date.now()}_${safeName}`), file, { contentType:file.type });
-      documentUrl = await getDownloadURL(r.ref);
+
+/* ==================================================
+   LOGIN
+================================================== */
+
+loginBtn.addEventListener(
+  "click",
+  async () => {
+
+    const email =
+      emailInput.value.trim();
+
+    const password =
+      passwordInput.value;
+
+    if(!email || !password){
+
+      message(
+        authMsg,
+        "कृपया ईमेल आणि पासवर्ड भरा.",
+        "error"
+      );
+
+      return;
     }
-    await saveProfileDoc(p);
-    await addDoc(collection(db, "jobs"), {
-      ownerUid: u.uid, custName: p.name, custPhone: p.phone, custEmail: u.email || "",
-      service: $("jService").value, details, documentUrl,
-      status: "Pending", totalAmount: 0, paidAmount: 0, paymentStatus: "Unpaid", payments: [], adminNotes: "",
-      createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+
+    loginBtn.disabled = true;
+
+    try{
+
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
+    }catch(error){
+
+      message(
+        authMsg,
+        firebaseError(error.code),
+        "error"
+      );
+
+    }finally{
+
+      loginBtn.disabled = false;
+
+    }
+
+  }
+);
+
+
+/* ==================================================
+   PASSWORD RESET
+================================================== */
+
+forgotPassword.addEventListener(
+  "click",
+  () => {
+
+    resetBtn.classList.remove("hidden");
+
+    message(
+      authMsg,
+      "ईमेल भरा आणि Password Reset Email वर क्लिक करा.",
+      "info"
+    );
+
+  }
+);
+
+
+resetBtn.addEventListener(
+  "click",
+  async () => {
+
+    const email =
+      emailInput.value.trim();
+
+    if(!email){
+
+      message(
+        authMsg,
+        "प्रथम ईमेल पत्ता भरा.",
+        "error"
+      );
+
+      return;
+    }
+
+    resetBtn.disabled = true;
+
+    try{
+
+      await sendPasswordResetEmail(
+        auth,
+        email
+      );
+
+      message(
+        authMsg,
+        "Password Reset Email पाठवला आहे. Inbox तपासा.",
+        "success"
+      );
+
+    }catch(error){
+
+      message(
+        authMsg,
+        firebaseError(error.code),
+        "error"
+      );
+
+    }finally{
+
+      resetBtn.disabled = false;
+
+    }
+
+  }
+);
+
+
+/* ==================================================
+   AUTH STATE
+================================================== */
+
+let authStateVersion = 0;
+
+onAuthStateChanged(
+  auth,
+  async user => {
+
+    const authStateRun = ++authStateVersion;
+
+    hideAllPanels();
+
+    if(!user){
+
+      authSection.classList.remove("hidden");
+
+      return;
+
+    }
+
+    /*
+      First check whether this UID exists
+      inside admins collection.
+    */
+
+    try{
+      const adminRef =
+        doc(db,"admins",user.uid);
+
+      const adminSnap =
+        await getDoc(adminRef);
+
+      if(authStateRun !== authStateVersion) return;
+
+      if(adminSnap.exists()){
+
+        adminSection.classList.remove("hidden");
+
+        adminEmail.textContent =
+          user.email || "";
+
+        await loadCustomers();
+
+        if(authStateRun !== authStateVersion) return;
+
+        return;
+
+      }
+
+
+      /*
+        Normal customer
+      */
+
+      customerSection.classList.remove(
+        "hidden"
+      );
+
+      customerEmail.textContent =
+        user.email || "";
+
+      if(!user.emailVerified){
+
+        verifyBox.classList.remove(
+          "hidden"
+        );
+
+      }else{
+
+        verifyBox.classList.add(
+          "hidden"
+        );
+
+      }
+
+      await loadCustomer(user.uid);
+
+      if(authStateRun !== authStateVersion) return;
+
+    }catch(error){
+
+      if(authStateRun !== authStateVersion) return;
+
+      console.error("Authentication state error:", error);
+
+      authSection.classList.remove("hidden");
+
+      message(
+        authMsg,
+        "डेटाबेसशी संपर्क साधता आला नाही. Internet आणि Firestore Rules तपासा.",
+        "error"
+      );
+
+    }
+  }
+);
+
+
+/* ==================================================
+   HIDE PANELS
+================================================== */
+
+function hideAllPanels(){
+
+  authSection.classList.add("hidden");
+
+  customerSection.classList.add("hidden");
+
+  adminSection.classList.add("hidden");
+
+  adminEditor.classList.add("hidden");
+
+  receiptPrint.classList.add("hidden");
+
+}
+
+
+/* ==================================================
+   CUSTOMER LOAD
+================================================== */
+
+async function loadCustomer(uid){
+
+  try{
+
+    const ref =
+      doc(db,"customers",uid);
+
+    const snap =
+      await getDoc(ref);
+
+    if(auth.currentUser?.uid !== uid) return;
+
+    if(!snap.exists()){
+
+      clearCustomerForm();
+
+      updateCustomerStatus({
+        status:"Pending",
+        paymentStatus:"Unpaid",
+        totalAmount:0,
+        paidAmount:0
+      });
+
+      return;
+
+    }
+
+    const data =
+      snap.data();
+
+    nameInput.value =
+      data.name || "";
+
+    phoneInput.value =
+      data.phone || "";
+
+    addressInput.value =
+      data.address || "";
+
+    detailsInput.value =
+      data.details || "";
+
+    updateCustomerStatus(data);
+
+  }catch(error){
+
+    message(
+      customerMsg,
+      "ग्राहक माहिती Load करता आली नाही. " + firebaseError(error.code),
+      "error"
+    );
+
+  }
+
+}
+
+
+/* ==================================================
+   CUSTOMER STATUS
+================================================== */
+
+function updateCustomerStatus(data){
+
+  const status =
+    data.status || "Pending";
+
+  const payment =
+    data.paymentStatus || "Unpaid";
+
+  customerStatus.innerHTML =
+    statusBadge(status);
+
+  customerPaymentStatus.innerHTML =
+    paymentBadge(payment);
+
+  const total =
+    Number(data.totalAmount || 0);
+
+  const paid =
+    Number(data.paidAmount || 0);
+
+  const balance =
+    Math.max(total-paid,0);
+
+  customerTotal.value =
+    "₹ " + total.toFixed(2);
+
+  customerPaid.value =
+    "₹ " + paid.toFixed(2);
+
+  customerBalance.value =
+    "₹ " + balance.toFixed(2);
+
+}
+
+
+/* ==================================================
+   SAVE CUSTOMER
+================================================== */
+
+saveCustomer.addEventListener(
+  "click",
+  async () => {
+
+    const user =
+      auth.currentUser;
+
+    if(!user){
+
+      message(
+        customerMsg,
+        "कृपया Login करा.",
+        "error"
+      );
+
+      return;
+
+    }
+
+    const name =
+      nameInput.value.trim();
+
+    const phone =
+      phoneInput.value.trim();
+
+    const address =
+      addressInput.value.trim();
+
+    const details =
+      detailsInput.value.trim();
+
+    if(!name){
+
+      message(
+        customerMsg,
+        "कृपया पूर्ण नाव भरा.",
+        "error"
+      );
+
+      return;
+
+    }
+
+    if(
+      phone &&
+      !/^[0-9]{10}$/.test(phone)
+    ){
+
+      message(
+        customerMsg,
+        "मोबाईल नंबर 10 अंकी असावा.",
+        "error"
+      );
+
+      return;
+
+    }
+
+    saveCustomer.disabled = true;
+
+    try{
+
+      const ref =
+        doc(db,"customers",user.uid);
+
+      const existing =
+        await getDoc(ref);
+
+      const baseData = {
+
+        name,
+        phone,
+        address,
+        details,
+        email:user.email || "",
+        updatedAt:serverTimestamp()
+
+      };
+
+      if(existing.exists()){
+
+        await updateDoc(
+          ref,
+          baseData
+        );
+
+      }else{
+
+        await setDoc(
+          ref,
+          {
+            ...baseData,
+            status:"Pending",
+            totalAmount:0,
+            paidAmount:0,
+            paymentStatus:"Unpaid",
+            adminNotes:""
+          }
+        );
+
+      }
+
+      message(
+        customerMsg,
+        "माहिती यशस्वीरीत्या Save झाली.",
+        "success"
+      );
+
+      await loadCustomer(user.uid);
+
+    }catch(error){
+
+      message(
+        customerMsg,
+        "माहिती Save करता आली नाही. " + firebaseError(error.code),
+        "error"
+      );
+
+    }finally{
+
+      saveCustomer.disabled = false;
+
+    }
+
+  }
+);
+
+
+/* ==================================================
+   EMAIL VERIFICATION
+================================================== */
+
+verifyBtn.addEventListener(
+  "click",
+  async () => {
+
+    const user =
+      auth.currentUser;
+
+    if(!user) return;
+
+    try{
+
+      await sendEmailVerification(
+        user
+      );
+
+      message(
+        customerMsg,
+        "Verification Email पुन्हा पाठवला आहे.",
+        "success"
+      );
+
+    }catch(error){
+
+      message(
+        customerMsg,
+        "Verification Email पाठवता आला नाही.",
+        "error"
+      );
+
+    }
+
+  }
+);
+
+
+/* ==================================================
+   CUSTOMER LOGOUT
+================================================== */
+
+customerLogout.addEventListener(
+  "click",
+  async () => {
+
+    await signOut(auth);
+
+  }
+);
+
+
+/* ==================================================
+   ADMIN LOGOUT
+================================================== */
+
+adminLogout.addEventListener(
+  "click",
+  async () => {
+
+    await signOut(auth);
+
+  }
+);
+
+
+/* ==================================================
+   LOAD ALL CUSTOMERS
+================================================== */
+
+async function loadCustomers(){
+
+  try{
+
+    message(
+      adminMsg,
+      "Customer List Load करत आहे...",
+      "info"
+    );
+
+    const requestedUid = auth.currentUser?.uid;
+
+    const snap =
+      await getDocs(
+        collection(db,"customers")
+      );
+
+    if(auth.currentUser?.uid !== requestedUid) return;
+
+    allCustomers = [];
+
+    snap.forEach(docSnap => {
+
+      allCustomers.push({
+
+        uid:docSnap.id,
+        ...docSnap.data()
+
+      });
+
     });
-    $("jDetails").value = ""; $("jFile").value = "";
-    await loadJobs();
-    message($("customerMsg"), "काम नोंदवले गेले!", "success");
-  }catch(e){ message($("customerMsg"), "त्रुटी: " + firebaseError(e.code), "error"); }
-  finally{ $("addJob").disabled = false; }
+
+    updateStats();
+
+    renderCustomers();
+
+    message(
+      adminMsg,
+      `${allCustomers.length} Customer records मिळाले.`,
+      "success"
+    );
+
+  }catch(error){
+
+    message(
+      adminMsg,
+      "Customer List Load करता आली नाही. " + firebaseError(error.code),
+      "error"
+    );
+
+  }
+
+}
+
+
+refreshCustomers.addEventListener(
+  "click",
+  loadCustomers
+);
+
+
+/* ==================================================
+   SEARCH / FILTER
+================================================== */
+
+adminSearch.addEventListener(
+  "input",
+  renderCustomers
+);
+
+statusFilter.addEventListener(
+  "change",
+  renderCustomers
+);
+
+customerList.addEventListener("click", event => {
+
+  const button = event.target.closest("button[data-action][data-uid]");
+
+  if(!button || !customerList.contains(button)) return;
+
+  const { action, uid } = button.dataset;
+
+  if(action === "manage") window.openCustomerEditor(uid);
+  if(action === "whatsapp") window.openWhatsApp(uid);
+  if(action === "receipt") window.openReceipt(uid);
+
 });
 
-// ---------- Jobs list ----------
-async function loadJobs(){
-  const u = auth.currentUser; if(!u) return;
-  try{
-    const q = isAdmin ? collection(db, "jobs") : query(collection(db, "jobs"), where("ownerUid", "==", u.uid));
-    const snap = await getDocs(q);
-    allJobs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
-    allJobs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-    if(sel && !sel.isNew) sel = allJobs.find(x => x.id === sel.id) || null;
-    isAdmin ? (updateStats(), renderAdminJobs()) : renderMyJobs();
-  }catch(e){ message(isAdmin ? $("adminMsg") : $("customerMsg"), "यादी लोड झाली नाही.", "error"); }
-}
-function renderMyJobs(){
-  if(!allJobs.length){ $("myJobs").innerHTML = `<div class="center" style="padding:15px">अजून कोणतेही काम नोंदवलेले नाही.</div>`; return; }
-  $("myJobs").innerHTML = allJobs.map(j => {
-    const c = calc(j), link = safeUrl(j.documentUrl);
-    return `<div class="customer-card">
-      <div class="customer-title"><h3>${esc(j.service || "काम")}</h3><div>${statusBadge(j.status || "Pending")} ${paymentBadge(c.ps)}</div></div>
-      <div>${esc(j.details || "-")}</div>
-      ${link ? `<div style="margin-top:5px"><a href="${esc(link)}" target="_blank" rel="noopener">📄 कागदपत्र पाहा</a></div>` : ""}
-      <div style="margin-top:6px">एकूण: ${money(c.total)} | भरलेले: ${money(c.paid)} | <b>बाकी: ${money(c.bal)}</b></div>
-      <div style="margin-top:6px">${payHtml(c.pays)}</div>
-      ${c.bal > 0 ? `<div class="qr-container"><b>ऑनलाइन पेमेंटसाठी QR स्कॅन करा</b><div id="qr_${esc(j.id)}" style="margin-top:8px"></div></div>` : ""}
-    </div>`;
-  }).join("");
-  allJobs.forEach(j => { const c = calc(j); if(c.bal > 0) renderQr("qr_" + j.id, c.bal, "Payment " + (j.service || "")); });
+
+/* ==================================================
+   RENDER CUSTOMER LIST
+================================================== */
+
+function renderCustomers(){
+
+  const search =
+    adminSearch.value
+      .trim()
+      .toLowerCase();
+
+  const filter =
+    statusFilter.value;
+
+  const filtered =
+    allCustomers.filter(customer => {
+
+      const text =
+        (
+          customer.name || ""
+        ) +
+        " " +
+        (
+          customer.phone || ""
+        ) +
+        " " +
+        (
+          customer.email || ""
+        );
+
+      const matchesSearch =
+        text.toLowerCase()
+          .includes(search);
+
+      const matchesStatus =
+        filter === "all" ||
+        (
+          customer.status ||
+          "Pending"
+        ) === filter;
+
+      return matchesSearch &&
+        matchesStatus;
+
+    });
+
+
+  if(filtered.length === 0){
+
+    customerList.innerHTML =
+      `
+      <div class="center">
+        कोणताही Customer सापडला नाही.
+      </div>
+      `;
+
+    return;
+
+  }
+
+
+  customerList.innerHTML =
+    filtered.map(customer => {
+
+      const total =
+        Number(
+          customer.totalAmount || 0
+        );
+
+      const paid =
+        Number(
+          customer.paidAmount || 0
+        );
+
+      const balance =
+        Math.max(total-paid,0);
+
+      return `
+
+      <div class="customer-card">
+
+        <div class="customer-title">
+
+          <div>
+
+            <h3>
+              ${escapeHtml(
+                customer.name ||
+                "नाव उपलब्ध नाही"
+              )}
+            </h3>
+
+            <div>
+              ${escapeHtml(
+                customer.email || ""
+              )}
+            </div>
+
+            <div>
+              ${escapeHtml(
+                customer.phone || ""
+              )}
+            </div>
+
+          </div>
+
+          <div>
+
+            ${statusBadge(
+              customer.status ||
+              "Pending"
+            )}
+
+          </div>
+
+        </div>
+
+        <hr>
+
+        <div>
+          <b>काम:</b>
+          ${escapeHtml(
+            customer.details || "-"
+          )}
+        </div>
+
+        <br>
+
+        <div>
+          <b>Payment:</b>
+          ${paymentBadge(
+            customer.paymentStatus ||
+            "Unpaid"
+          )}
+        </div>
+
+        <div>
+          Total:
+          ₹${total.toFixed(2)}
+          |
+          Paid:
+          ₹${paid.toFixed(2)}
+          |
+          Balance:
+          ₹${balance.toFixed(2)}
+        </div>
+
+        <div class="actions" style="margin-top:12px">
+
+          <button
+            class="btn-dark btn-small"
+            data-action="manage" data-uid="${escapeHtml(customer.uid)}"
+          >
+            Manage
+          </button>
+
+          <button
+            class="btn-green btn-small"
+            data-action="whatsapp" data-uid="${escapeHtml(customer.uid)}"
+          >
+            WhatsApp
+          </button>
+
+          <button
+            class="btn-orange btn-small"
+            data-action="receipt" data-uid="${escapeHtml(customer.uid)}"
+          >
+            Receipt
+          </button>
+
+        </div>
+
+      </div>
+
+      `;
+
+    }).join("");
+
 }
 
-// ---------- Admin ----------
+
+/* ==================================================
+   STATS
+================================================== */
+
 function updateStats(){
-  $("statTotal").textContent = allJobs.length;
-  ["Pending","Processing","Completed"].forEach(s => $("stat" + s).textContent = allJobs.filter(x => (x.status || "Pending") === s).length);
-}
-function renderAdminJobs(){
-  const s = $("adminSearch").value.trim().toLowerCase(), f = $("statusFilter").value;
-  const list = allJobs.filter(j => `${j.custName||""} ${j.custPhone||""} ${j.service||""} ${j.details||""}`.toLowerCase().includes(s) && (f === "all" || (j.status || "Pending") === f));
-  if(!list.length){ $("jobList").innerHTML = `<div class="center" style="padding:15px">कोणतेही काम सापडले नाही.</div>`; return; }
-  $("jobList").innerHTML = list.map(j => {
-    const c = calc(j), link = safeUrl(j.documentUrl);
-    return `<div class="customer-card">
-      <div class="customer-title"><div><h3>${esc(j.custName || "नाव नाही")} — ${esc(j.service || "")}</h3><div>${esc(j.custPhone || "-")}${j.custEmail ? " | " + esc(j.custEmail) : ""}</div></div><div>${statusBadge(j.status || "Pending")}</div></div>
-      <div style="margin-top:6px">${esc(j.details || "-")}</div>
-      ${link ? `<div style="margin-top:5px"><a href="${esc(link)}" target="_blank" rel="noopener">📄 कागदपत्र पाहा</a></div>` : ""}
-      <div style="margin-top:6px">${paymentBadge(c.ps)} एकूण: ${money(c.total)} | भरलेले: ${money(c.paid)} | <b>बाकी: ${money(c.bal)}</b></div>
-      <div class="actions" style="margin-top:10px">
-        <button class="btn-dark btn-small" data-a="manage" data-id="${esc(j.id)}">Manage</button>
-        <button class="btn-green btn-small" data-a="wa" data-id="${esc(j.id)}">WhatsApp</button>
-        <button class="btn-orange btn-small" data-a="receipt" data-id="${esc(j.id)}">पावती</button>
-      </div></div>`;
-  }).join("");
-}
-$("refreshJobs").addEventListener("click", loadJobs);
-$("adminSearch").addEventListener("input", renderAdminJobs);
-$("statusFilter").addEventListener("change", renderAdminJobs);
-$("jobList").addEventListener("click", e => {
-  const b = e.target.closest("button[data-a]"); if(!b) return;
-  const j = allJobs.find(x => x.id === b.dataset.id); if(!j) return;
-  if(b.dataset.a === "manage") openEditor(j);
-  if(b.dataset.a === "wa") openWA(j);
-  if(b.dataset.a === "receipt") openReceipt(j);
-});
-$("newJobBtn").addEventListener("click", () => openEditor({ isNew:true, status:"Pending", payments:[], totalAmount:0 }));
 
-function refreshEditCalc(){
-  const c = calc({ totalAmount:$("eTotal").value, payments:editPays });
-  $("eCalc").innerHTML = `भरलेले: <b>${money(c.paid)}</b><br>बाकी: <b>${money(c.bal)}</b><br>${paymentBadge(c.ps)}`;
-  $("ePayList").innerHTML = editPays.length
-    ? editPays.map((p, i) => `<div class="pay-row"><span>${fmtDate(p.date)} • ${esc(p.mode)} • <b>${money(p.amt)}</b></span><button class="btn-red btn-small" style="margin:0" data-del="${i}">हटवा</button></div>`).join("")
-    : payHtml([]);
+  statTotal.textContent =
+    allCustomers.length;
+
+  statPending.textContent =
+    allCustomers.filter(
+      x => (x.status || "Pending")
+      === "Pending"
+    ).length;
+
+  statProcessing.textContent =
+    allCustomers.filter(
+      x => x.status === "Processing"
+    ).length;
+
+  statCompleted.textContent =
+    allCustomers.filter(
+      x => x.status === "Completed"
+    ).length;
+
 }
-function openEditor(j){
-  sel = j;
-  $("editTitle").textContent = j.isNew ? "नवीन जॉब कार्ड" : "जॉब कार्ड";
-  $("eName").value = j.custName || ""; $("ePhone").value = j.custPhone || "";
-  $("eService").value = j.service || SERVICES[0][0];
-  $("eStatus").value = j.status || "Pending";
-  $("eDetails").value = j.details || ""; $("eNotes").value = j.adminNotes || "";
-  $("eTotal").value = num(j.totalAmount);
-  editPays = (j.payments || []).map(p => ({ ...p }));
-  const link = safeUrl(j.documentUrl);
-  $("eDoc").innerHTML = link ? `<a href="${esc(link)}" target="_blank" rel="noopener" style="color:var(--primary);font-weight:bold">📄 कागदपत्र उघडा</a>` : "";
-  message($("editorMsg"), "");
-  refreshEditCalc();
-  $("adminEditor").classList.remove("hidden");
-  $("adminEditor").scrollIntoView({ behavior:"smooth" });
-}
-$("eTotal").addEventListener("input", refreshEditCalc);
-$("payAdd").addEventListener("click", () => {
-  const amt = num($("payAmt").value);
-  if(amt <= 0){ message($("editorMsg"), "पेमेंट रक्कम टाका.", "error"); return; }
-  editPays.push({ amt, mode:$("payMode").value, date:new Date().toISOString() });
-  $("payAmt").value = ""; message($("editorMsg"), "पेमेंट जोडले. Save करायला विसरू नका.", "info");
-  refreshEditCalc();
-});
-$("ePayList").addEventListener("click", e => {
-  const b = e.target.closest("button[data-del]"); if(!b) return;
-  editPays.splice(+b.dataset.del, 1); refreshEditCalc();
-});
-$("saveJob").addEventListener("click", async () => {
-  if(!sel) return;
-  const name = $("eName").value.trim(), phone = $("ePhone").value.trim(), total = num($("eTotal").value);
-  const c = calc({ totalAmount:total, payments:editPays });
-  if(!name){ message($("editorMsg"), "ग्राहकाचे नाव टाका.", "error"); return; }
-  if(phone && !/^[0-9]{10}$/.test(phone)){ message($("editorMsg"), "मोबाईल नंबर १० अंकी असावा.", "error"); return; }
-  if(c.paid > total){ message($("editorMsg"), "भरलेली रक्कम एकूण रकमेपेक्षा जास्त आहे.", "error"); return; }
-  const data = {
-    custName:name, custPhone:phone, service:$("eService").value, status:$("eStatus").value,
-    details:$("eDetails").value.trim(), adminNotes:$("eNotes").value.trim(),
-    totalAmount:total, payments:editPays, paidAmount:c.paid, paymentStatus:c.ps, updatedAt:serverTimestamp()
-  };
-  const wasCompleted = sel.status === "Completed";
-  $("saveJob").disabled = true;
-  try{
-    if(sel.isNew){
-      const r = await addDoc(collection(db, "jobs"), { ...data, ownerUid:"", custEmail:"", documentUrl:"", createdAt:serverTimestamp() });
-      sel = { ...data, id:r.id, ownerUid:"" };
-    }else{
-      await updateDoc(doc(db, "jobs", sel.id), data);
-      sel = { ...sel, ...data };
+
+
+/* ==================================================
+   OPEN CUSTOMER EDITOR
+================================================== */
+
+window.openCustomerEditor =
+async function(uid){
+
+  const customer =
+    allCustomers.find(
+      x => x.uid === uid
+    );
+
+  if(!customer) return;
+
+  selectedCustomer =
+    customer;
+
+  adminEditor.classList.remove(
+    "hidden"
+  );
+
+  editUid.textContent =
+    uid;
+
+  editName.value =
+    customer.name || "";
+
+  editPhone.value =
+    customer.phone || "";
+
+  editEmail.value =
+    customer.email || "";
+
+  editStatus.value =
+    customer.status ||
+    "Pending";
+
+  editDetails.value =
+    customer.details || "";
+
+  editAdminNotes.value =
+    customer.adminNotes || "";
+
+  editTotal.value =
+    Number(customer.totalAmount || 0);
+
+  editPaid.value =
+    Number(customer.paidAmount || 0);
+
+  editPaymentStatus.value =
+    customer.paymentStatus ||
+    "Unpaid";
+
+  adminEditor.scrollIntoView({
+    behavior:"smooth"
+  });
+
+};
+
+
+/* ==================================================
+   SAVE ADMIN CUSTOMER
+================================================== */
+
+saveAdminCustomer.addEventListener(
+  "click",
+  async () => {
+
+    if(!selectedCustomer)
+      return;
+
+    const total =
+      Number(editTotal.value || 0);
+
+    const paid =
+      Number(editPaid.value || 0);
+
+    const adminPhone = editPhone.value.trim();
+
+    if(adminPhone && !/^[0-9]{10}$/.test(adminPhone)){
+
+      message(
+        editorMsg,
+        "मोबाईल नंबर 10 अंकी असावा.",
+        "error"
+      );
+
+      return;
+
     }
-    message($("editorMsg"), "यशस्वीरित्या Save झाले!", "success");
-    await loadJobs();
-    if(data.status === "Completed" && !wasCompleted && data.custPhone && confirm("काम पूर्ण झाले. ग्राहकाला WhatsApp संदेश पाठवायचा?")) openWA(sel);
-  }catch(e){ message($("editorMsg"), "Save करताना त्रुटी: " + firebaseError(e.code), "error"); }
-  finally{ $("saveJob").disabled = false; }
-});
-$("closeEditor").addEventListener("click", () => { $("adminEditor").classList.add("hidden"); sel = null; });
 
-// ---------- WhatsApp ----------
-function openWA(j){
-  let phone = String(j.custPhone || "").replace(/\D/g, "");
-  if(!phone){ alert("मोबाईल नंबर उपलब्ध नाही."); return; }
-  if(phone.length === 10) phone = "91" + phone;
-  const c = calc(j), st = j.status || "Pending";
-  const line = {
-    Pending:"तुमचे काम नोंदवले आहे. लवकरच सुरू करू.",
-    Processing:"तुमचे काम सुरू आहे.",
-    Completed:"✅ तुमचे काम पूर्ण झाले आहे. कृपया केंद्रावर येऊन घेऊन जावे.",
-    Cancelled:"तुमचे काम रद्द करण्यात आले आहे."
-  }[st];
-  const text = `*SK COMPUTER सेवा अपडेट*\n\nनमस्कार *${j.custName || "ग्राहक"}*,\n${line}\n\nसेवा: ${j.service || "-"}\nStatus: *${st}*\nएकूण: ${money(c.total)}\nभरलेले: ${money(c.paid)}\n*बाकी: ${money(c.bal)}*\n\nधन्यवाद!\nSK Computer, एकनाथवाडी`;
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
-}
-$("waBtn").addEventListener("click", () => { if(sel) openWA({ ...sel, custName:$("eName").value, custPhone:$("ePhone").value, status:$("eStatus").value, service:$("eService").value, totalAmount:$("eTotal").value, payments:editPays }); });
+    if(!Number.isFinite(total) || !Number.isFinite(paid) || total < 0 || paid < 0){
 
-// ---------- Receipt ----------
-function openReceipt(j){
-  const c = calc(j), d = new Date(), z = n => String(n).padStart(2, "0");
-  $("rNo").textContent = `SK-${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${String(j.id || "NEW").slice(0, 4).toUpperCase()}`;
-  $("rDate").textContent = d.toLocaleDateString("en-IN");
-  $("rName").textContent = j.custName || "-"; $("rPhone").textContent = j.custPhone || "-";
-  $("rWork").textContent = `${j.service || ""}${j.details ? " - " + j.details : ""}`;
-  $("rPays").innerHTML = payHtml(c.pays);
-  $("rTotal").textContent = money(c.total); $("rPaid").textContent = money(c.paid); $("rBal").textContent = money(c.bal);
-  $("rQrBox").classList.toggle("hidden", c.bal <= 0);
-  if(c.bal > 0) renderQr("rQr", c.bal, "Receipt Balance", 140); else $("rQr").innerHTML = "";
-  $("receiptBox").classList.remove("small");
-  $("receiptPrint").classList.remove("hidden");
-  $("receiptPrint").scrollIntoView({ behavior:"smooth" });
+      message(
+        editorMsg,
+        "रक्कम चुकीची आहे.",
+        "error"
+      );
+
+      return;
+
+    }
+
+    if(paid > total){
+
+      message(
+        editorMsg,
+        "Paid Amount Total Amount पेक्षा जास्त असू शकत नाही.",
+        "error"
+      );
+
+      return;
+
+    }
+
+    saveAdminCustomer.disabled =
+      true;
+
+    try{
+
+      let paymentStatus =
+        editPaymentStatus.value;
+
+      if(total === 0){
+
+        paymentStatus =
+          "Unpaid";
+
+      }else if(paid >= total){
+
+        paymentStatus =
+          "Paid";
+
+      }else if(paid > 0){
+
+        paymentStatus =
+          "Partial";
+
+      }else{
+
+        paymentStatus =
+          "Unpaid";
+
+      }
+
+
+      await updateDoc(
+        doc(
+          db,
+          "customers",
+          selectedCustomer.uid
+        ),
+        {
+
+          name:
+            editName.value.trim(),
+
+          phone:
+            adminPhone,
+
+          status:
+            editStatus.value,
+
+          details:
+            editDetails.value.trim(),
+
+          adminNotes:
+            editAdminNotes.value.trim(),
+
+          totalAmount:
+            total,
+
+          paidAmount:
+            paid,
+
+          paymentStatus,
+
+          updatedAt:
+            serverTimestamp()
+
+        }
+      );
+
+
+      message(
+        editorMsg,
+        "Customer माहिती Update झाली.",
+        "success"
+      );
+
+      await loadCustomers();
+
+      selectedCustomer =
+        allCustomers.find(
+          x =>
+            x.uid ===
+            selectedCustomer.uid
+        );
+
+    }catch(error){
+
+      message(
+        editorMsg,
+        "Customer Update करता आला नाही. " + firebaseError(error.code),
+        "error"
+      );
+
+    }finally{
+
+      saveAdminCustomer.disabled =
+        false;
+
+    }
+
+  }
+);
+
+
+/* ==================================================
+   WHATSAPP
+================================================== */
+
+window.openWhatsApp =
+function(uid){
+
+  const customer =
+    allCustomers.find(
+      x => x.uid === uid
+    );
+
+  if(!customer) return;
+
+  openWhatsAppForCustomer(
+    customer
+  );
+
+};
+
+
+function openWhatsAppForCustomer(
+  customer
+){
+
+  let phone =
+    String(
+      customer.phone || ""
+    ).replace(/\D/g,"");
+
+  if(phone.length === 10){
+
+    phone =
+      "91" + phone;
+
+  }
+
+  if(!phone){
+
+    alert(
+      "Customer चा मोबाईल नंबर उपलब्ध नाही."
+    );
+
+    return;
+
+  }
+
+  const status =
+    customer.status ||
+    "Pending";
+
+  const messageText =
+    `नमस्कार ${customer.name || ""},\n\n` +
+    `SK Computer कडून तुमच्या कामाचा Status: ${status}\n` +
+    `काम: ${customer.details || "-"}\n\n` +
+    `धन्यवाद.\nSK Computer`;
+
+  const url =
+    "https://wa.me/" +
+    phone +
+    "?text=" +
+    encodeURIComponent(
+      messageText
+    );
+
+  window.open(
+    url,
+    "_blank"
+  );
+
 }
-$("receiptBtn").addEventListener("click", () => { if(sel && !sel.isNew) openReceipt({ ...sel, custName:$("eName").value, custPhone:$("ePhone").value, service:$("eService").value, details:$("eDetails").value, totalAmount:$("eTotal").value, payments:editPays }); else message($("editorMsg"), "प्रथम Save करा.", "error"); });
-$("printA4").addEventListener("click", () => { $("receiptBox").classList.remove("small"); window.print(); });
-$("printSmall").addEventListener("click", () => { $("receiptBox").classList.add("small"); window.print(); });
-$("closeReceipt").addEventListener("click", () => $("receiptPrint").classList.add("hidden"));
+
+
+/* ==================================================
+   EDITOR WHATSAPP
+================================================== */
+
+whatsappBtn.addEventListener(
+  "click",
+  () => {
+
+    if(!selectedCustomer)
+      return;
+
+    openWhatsAppForCustomer(
+      selectedCustomer
+    );
+
+  }
+);
+
+
+/* ==================================================
+   RECEIPT
+================================================== */
+
+window.openReceipt =
+function(uid){
+
+  const customer =
+    allCustomers.find(
+      x => x.uid === uid
+    );
+
+  if(!customer) return;
+
+  generateReceipt(
+    customer
+  );
+
+};
+
+
+receiptBtn.addEventListener(
+  "click",
+  () => {
+
+    if(!selectedCustomer)
+      return;
+
+    generateReceipt(
+      selectedCustomer
+    );
+
+  }
+);
+
+
+function generateReceipt(customer){
+
+  const total =
+    Number(
+      customer.totalAmount || 0
+    );
+
+  const paid =
+    Number(
+      customer.paidAmount || 0
+    );
+
+  const balance =
+    Math.max(
+      total-paid,
+      0
+    );
+
+  const receiptNumber =
+    "SK-" +
+    Date.now()
+      .toString()
+      .slice(-8);
+
+  document.getElementById(
+    "receiptNo"
+  ).textContent =
+    receiptNumber;
+
+  document.getElementById(
+    "receiptDate"
+  ).textContent =
+    new Date().toLocaleDateString(
+      "en-IN"
+    );
+
+  document.getElementById(
+    "receiptName"
+  ).textContent =
+    customer.name || "";
+
+  document.getElementById(
+    "receiptPhone"
+  ).textContent =
+    customer.phone || "";
+
+  document.getElementById(
+    "receiptWork"
+  ).textContent =
+    customer.details || "";
+
+  document.getElementById(
+    "receiptTotal"
+  ).textContent =
+    "₹ " +
+    total.toFixed(2);
+
+  document.getElementById(
+    "receiptPaid"
+  ).textContent =
+    "₹ " +
+    paid.toFixed(2);
+
+  document.getElementById(
+    "receiptBalance"
+  ).textContent =
+    "₹ " +
+    balance.toFixed(2);
+
+  receiptPrint.classList.remove(
+    "hidden"
+  );
+
+  receiptPrint.scrollIntoView({
+    behavior:"smooth"
+  });
+
+}
+
+
+/* ==================================================
+   CLOSE BUTTONS
+================================================== */
+
+closeEditor.addEventListener(
+  "click",
+  () => {
+
+    adminEditor.classList.add(
+      "hidden"
+    );
+
+    selectedCustomer = null;
+
+  }
+);
+
+
+document.getElementById(
+  "closeReceipt"
+).addEventListener(
+  "click",
+  () => {
+
+    receiptPrint.classList.add(
+      "hidden"
+    );
+
+  }
+);
+
+
+/* ==================================================
+   STATUS BADGE
+================================================== */
+
+function statusBadge(status){
+
+  let cls =
+    "status-pending";
+
+  if(status === "Processing")
+    cls =
+      "status-processing";
+
+  if(status === "Completed")
+    cls =
+      "status-completed";
+
+  if(status === "Cancelled")
+    cls =
+      "status-cancelled";
+
+  return `
+    <span class="status-badge ${cls}">
+      ${escapeHtml(status)}
+    </span>
+  `;
+
+}
+
+
+/* ==================================================
+   PAYMENT BADGE
+================================================== */
+
+function paymentBadge(status){
+
+  let cls =
+    "status-pending";
+
+  if(status === "Partial")
+    cls =
+      "status-processing";
+
+  if(status === "Paid")
+    cls =
+      "status-completed";
+
+  return `
+    <span class="status-badge ${cls}">
+      ${escapeHtml(status)}
+    </span>
+  `;
+
+}
+
+
+/* ==================================================
+   CLEAR CUSTOMER
+================================================== */
+
+function clearCustomerForm(){
+
+  nameInput.value = "";
+
+  phoneInput.value = "";
+
+  addressInput.value = "";
+
+  detailsInput.value = "";
+
+}
+
+
+/* ==================================================
+   ESCAPE HTML
+================================================== */
+
+function escapeHtml(value){
+
+  return String(value || "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+/* ==================================================
+   FIREBASE ERRORS
+================================================== */
+
+function firebaseError(code){
+
+  const errors = {
+
+    "permission-denied":
+      "Firestore Rules मुळे परवानगी नाकारली. Firebase Console मधील Rules तपासा.",
+
+    "unavailable":
+      "Firestore उपलब्ध नाही. Internet connection तपासा.",
+
+    "failed-precondition":
+      "Firestore सेटिंग्ज अपूर्ण आहेत. Firebase Console तपासा.",
+
+    "auth/invalid-email":
+      "ईमेल पत्ता चुकीचा आहे.",
+
+    "auth/invalid-credential":
+      "ईमेल किंवा पासवर्ड चुकीचा आहे.",
+
+    "auth/user-not-found":
+      "ईमेल किंवा पासवर्ड चुकीचा आहे.",
+
+    "auth/wrong-password":
+      "ईमेल किंवा पासवर्ड चुकीचा आहे.",
+
+    "auth/email-already-in-use":
+      "या ईमेलवर आधीच खाते आहे.",
+
+    "auth/weak-password":
+      "पासवर्ड अधिक मजबूत ठेवा.",
+
+    "auth/too-many-requests":
+      "खूप प्रयत्न झाले. काही वेळाने पुन्हा प्रयत्न करा.",
+
+    "auth/network-request-failed":
+      "Internet connection तपासा.",
+
+    "auth/user-disabled":
+      "हे खाते बंद करण्यात आले आहे.",
+
+    "auth/operation-not-allowed":
+      "Email/Password Authentication Enable केलेले नाही."
+
+  };
+
+  return (
+    errors[code] ||
+    "काहीतरी त्रुटी आली. पुन्हा प्रयत्न करा."
+  );
+
+}
+
 </script>
+
 </body>
 </html>
