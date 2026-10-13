@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function verified() { return signedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function validDocUrl(u) {
+      return u == "" || u.matches('https://firebasestorage.googleapis.com/.*');
+    }
+
+    // Admin यादी: फक्त Console मधून बदल
+    match /admins/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list, write: if false;
+    }
+
+    // ग्राहकाची स्वतःची माहिती
+    match /customers/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow create, update: if verified() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name','phone','address','email','updatedAt'])
+        && request.resource.data.email == request.auth.token.email;
+      allow delete: if isAdmin();
+    }
+
+    // कामे (जॉब कार्ड)
+    match /jobs/{id} {
+      allow read: if signedIn() && (isAdmin() || resource.data.ownerUid == request.auth.uid);
+
+      // ग्राहक फक्त Pending, ० रक्कम, रिकामे पेमेंट असलेले काम नोंदवू शकतो
+      allow create: if isAdmin() || (verified()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.status == "Pending"
+        && request.resource.data.totalAmount == 0
+        && request.resource.data.paidAmount == 0
+        && request.resource.data.paymentStatus == "Unpaid"
+        && request.resource.data.payments.size() == 0
+        && request.resource.data.adminNotes == ""
+        && validDocUrl(request.resource.data.documentUrl));
+
+      allow update, delete: if isAdmin();
+    }
+  }
+}
