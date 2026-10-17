@@ -32,7 +32,9 @@ service cloud.firestore {
       allow read: if signedIn() && (isAdmin() || resource.data.ownerUid == request.auth.uid);
 
       // ग्राहक फक्त Pending, ० रक्कम, रिकामे पेमेंट असलेले काम नोंदवू शकतो
+      // (jobNumber / trackKey सारखी फील्ड ग्राहक स्वतः टाकू शकत नाही – फक्त ॲडमिन)
       allow create: if isAdmin() || (verified()
+        && request.resource.data.keys().hasOnly(['ownerUid','custName','custPhone','custEmail','service','details','documentUrl','status','totalAmount','paidAmount','paymentStatus','payments','adminNotes','createdAt','updatedAt'])
         && request.resource.data.ownerUid == request.auth.uid
         && request.resource.data.status == "Pending"
         && request.resource.data.totalAmount == 0
@@ -43,6 +45,19 @@ service cloud.firestore {
         && validDocUrl(request.resource.data.documentUrl));
 
       allow update, delete: if isAdmin();
+    }
+
+    // लॉगिनशिवाय ट्रॅकिंग: document ID = "SK-2026-0001-1234" (Job No. + मोबाईलचे शेवटचे ४ अंक)
+    // फक्त get परवानगी, list बंद. यात नाव/मोबाईल/पत्ता नाही – फक्त सेवा, स्थिती व रकमा.
+    match /publicJobs/{trackId} {
+      allow get: if true;
+      allow list: if false;
+      allow write: if isAdmin();
+    }
+
+    // Job क्रमांक काउंटर: फक्त ॲडमिन
+    match /counters/{counterId} {
+      allow read, write: if isAdmin();
     }
   }
 }

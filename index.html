@@ -53,11 +53,12 @@ summary{cursor:pointer;font-weight:700}
 @media print{
   @page{margin:10mm}
   body{background:#fff;padding:0}
-  .container>*:not(#receiptPrint){display:none!important}
-  #receiptPrint{box-shadow:none;padding:0;margin:0}
+  .container>*:not(.print-area){display:none!important}
+  .print-area{box-shadow:none;padding:0;margin:0}
   .no-print{display:none!important}
 }
 </style>
+<style id="pageStyle"></style>
 </head>
 <body>
 <div class="container">
@@ -81,6 +82,18 @@ summary{cursor:pointer;font-weight:700}
   <div class="link"><span id="toggleText">खाते नाही का?</span> <a id="toggleAuth">येथे नोंदणी करा</a></div>
   <div class="link" id="forgotBox"><a id="forgotPassword">पासवर्ड विसरलात?</a></div>
   <p id="authMsg" class="msg"></p>
+</section>
+
+<!-- PUBLIC TRACKING (लॉगिनशिवाय) -->
+<section id="trackCard" class="card">
+  <h3>🔍 कामाची स्थिती तपासा</h3>
+  <small style="color:var(--gray)">लॉगिन न करता: Job No. आणि मोबाईलचे शेवटचे ४ अंक टाका.</small>
+  <div class="form-grid" style="margin-top:10px">
+    <div><label>Job No.</label><input id="trackJob" placeholder="SK-2026-0001" autocapitalize="characters"></div>
+    <div><label>मोबाईलचे शेवटचे ४ अंक</label><input id="trackPhone" inputmode="numeric" maxlength="4" placeholder="1234"></div>
+  </div>
+  <button id="trackBtn">शोधा</button>
+  <div id="trackResult" class="hidden" style="margin-top:12px"></div>
 </section>
 
 <!-- SERVICES -->
@@ -154,8 +167,17 @@ summary{cursor:pointer;font-weight:700}
     <div class="actions">
       <button id="newJobBtn" class="btn-green">➕ नवीन जॉब कार्ड</button>
       <button id="refreshJobs" class="btn-dark">Refresh</button>
+      <button id="syncBtn" class="btn-gray" title="जुन्या कामांना Job No. देऊन ट्रॅकिंगसाठी तयार करा">🔄 ट्रॅकिंग सिंक (जुने जॉब)</button>
     </div>
     <p id="adminMsg" class="msg"></p>
+  </div>
+  <div class="card">
+    <h3>📊 दैनिक गल्ला (Cashbook)</h3>
+    <div class="form-grid">
+      <div><label>दिनांक</label><input type="date" id="cbDate"></div>
+      <div style="align-self:end"><button id="cbShow" class="btn-dark" style="margin-top:0">दाखवा</button></div>
+    </div>
+    <div id="cbResult" style="margin-top:12px"></div>
   </div>
   <div class="card"><h3>कामांची यादी</h3><div id="jobList"></div></div>
 </section>
@@ -189,13 +211,14 @@ summary{cursor:pointer;font-weight:700}
     <button id="saveJob" class="btn-green">Save</button>
     <button id="waBtn" class="btn-green">WhatsApp पाठवा</button>
     <button id="receiptBtn" class="btn-orange">पावती</button>
+    <button id="jobCardBtn" class="btn-dark">Job Card (QR)</button>
     <button id="closeEditor" class="btn-gray">Close</button>
   </div>
   <p id="editorMsg" class="msg"></p>
 </section>
 
 <!-- RECEIPT -->
-<section id="receiptPrint" class="card hidden">
+<section id="receiptPrint" class="card hidden print-area">
   <div class="receipt" id="receiptBox">
     <div class="receipt-header">
       <h2>SK COMPUTER</h2>
@@ -224,30 +247,62 @@ summary{cursor:pointer;font-weight:700}
   </div>
 </section>
 
+<!-- JOB CARD (QR) -->
+<section id="jobCardPrint" class="card hidden print-area">
+  <div class="receipt" id="jobCardBox">
+    <div class="receipt-header">
+      <h2>SK COMPUTER</h2>
+      <div>आपले सरकार व डिजिटल सेवा केंद्र, एकनाथवाडी (पाथर्डी)</div>
+      <div>मो: 8888146077 | <b>JOB CARD</b></div>
+    </div>
+    <div class="receipt-row"><b>Job No.</b><span id="jcNo"></span></div>
+    <div class="receipt-row"><b>दिनांक</b><span id="jcDate"></span></div>
+    <div class="receipt-row"><b>ग्राहक</b><span id="jcName"></span></div>
+    <div class="receipt-row"><b>मोबाईल</b><span id="jcPhone"></span></div>
+    <div class="receipt-row"><b>काम</b><span id="jcWork"></span></div>
+    <div class="receipt-row"><b>स्थिती</b><span id="jcStatus"></span></div>
+    <div class="amount-box">
+      <div class="receipt-row"><b>एकूण रक्कम</b><span id="jcTotal"></span></div>
+      <div class="receipt-row"><b>भरलेली रक्कम</b><span id="jcPaid"></span></div>
+      <div class="receipt-row"><b>शिल्लक रक्कम</b><span id="jcBal"></span></div>
+    </div>
+    <div class="qr-container"><div id="jcQr"></div><small id="jcQrNote" style="margin-top:5px"></small></div>
+    <div class="sign"><span>ग्राहकाची सही</span><span>SK Computer (सही / शिक्का)</span></div>
+  </div>
+  <div class="actions no-print" style="margin-top:15px">
+    <button id="printJobCard" class="btn-dark">Job Card प्रिंट</button>
+    <button id="closeJobCard" class="btn-gray">Close</button>
+  </div>
+</section>
+
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, sendEmailVerification, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, collection, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, setDoc, updateDoc, addDoc, collection, getDocs, query, where, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-storage.js";
 import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-analytics.js";
 
 const SHOP_UPI_ID = "santoshkhedkar@ybl";
 const SHOP_NAME = "SK Computer";
 const SHOP_WA = "918888146077";
+// तुमच्या वेबसाईटचा पत्ता (उदा. "https://sk-computer-53668.web.app/"). QR व WhatsApp ट्रॅकिंग लिंकसाठी वापरतात.
+// रिकामा ठेवला तर सध्या उघडलेल्या पेजचा पत्ता वापरला जाईल.
+const SITE_URL = "";
+const siteBase = () => SITE_URL || (location.origin + location.pathname);
 
 const SERVICES = [
-  ["पॅन कार्ड", "आधार कार्ड, फोटो, सही"],
+  ["पॅन कार्ड", "आधार कार्ड, फोटो, सही", 200],
   ["आधार दुरुस्ती / अपडेट", "आधार कार्ड, पुरावा कागदपत्र"],
   ["मतदार कार्ड", "आधार कार्ड, फोटो, वयाचा/पत्त्याचा पुरावा"],
   ["ड्रायव्हिंग लायसन्स", "आधार कार्ड, फोटो, पत्त्याचा पुरावा"],
-  ["उत्पन्न दाखला", "आधार कार्ड, रेशन कार्ड, उत्पन्नाचा पुरावा"],
-  ["जात प्रमाणपत्र", "आधार कार्ड, शाळा सोडल्याचा दाखला, वडिलांचे कागदपत्र"],
+  ["उत्पन्न दाखला", "आधार कार्ड, रेशन कार्ड, उत्पन्नाचा पुरावा", 150],
+  ["जात प्रमाणपत्र", "आधार कार्ड, शाळा सोडल्याचा दाखला, वडिलांचे कागदपत्र", 200],
   ["७/१२ / ८अ उतारा", "गट/सर्व्हे नंबर माहिती"],
-  ["रेशन कार्ड", "आधार कार्ड सर्व सदस्यांचे, फोटो"],
+  ["रेशन कार्ड", "आधार कार्ड सर्व सदस्यांचे, फोटो", 150],
   ["ऑनलाइन फॉर्म / अर्ज", "संबंधित कागदपत्रे, आधार, मोबाईल नंबर"],
-  ["झेरॉक्स / प्रिंट / स्कॅन", "मूळ कागदपत्र"],
+  ["झेरॉक्स / प्रिंट / स्कॅन", "मूळ कागदपत्र", 50],
   ["इतर", "कामाची माहिती लिहा"]
 ];
 
@@ -264,7 +319,9 @@ const auth = getAuth(app), db = getFirestore(app), storage = getStorage(app);
 isSupported().then(ok => { if(ok) getAnalytics(app); }).catch(() => {});
 
 const $ = id => document.getElementById(id);
-let registerMode = false, isAdmin = false, allJobs = [], sel = null, editPays = [];
+let registerMode = false, isAdmin = false, allJobs = [], sel = null, editPays = [], trackFromUrl = false;
+// सेवेनुसार सुचवलेला दर (SERVICES मधील तिसरी किंमत; 0 = दर ठरलेला नाही)
+const PRICES = Object.fromEntries(SERVICES.map(([n, , p]) => [n, p || 0]));
 
 // ---------- Helpers ----------
 const num = v => parseFloat(v) || 0;
@@ -311,12 +368,61 @@ function renderQr(id, amount, note = "SK Computer Payment", size = 120){
 }
 const payHtml = pays => (pays || []).map(p => `<div class="pay-row"><span>${fmtDate(p.date)} • ${esc(p.mode)}</span><b>${money(p.amt)}</b></div>`).join("") || `<small style="color:var(--gray)">अजून पेमेंट नाही</small>`;
 function digitsOnly(...els){ els.forEach(i => i.addEventListener("input", () => { i.value = i.value.replace(/\D/g, "").slice(0, 10); })); }
+const setPage = css => { $("pageStyle").textContent = css; };
+
+// ---------- Job No. / Tracking helpers ----------
+const JOBNO_RE = /^SK-\d{4}-\d{4}$/;
+const last4 = p => String(p || "").replace(/\D/g, "").slice(-4);
+const dkey = d => { const x = new Date(d), z = n => String(n).padStart(2, "0"); return `${x.getFullYear()}-${z(x.getMonth() + 1)}-${z(x.getDate())}`; };
+// publicJobs चा document ID: Job No. + मोबाईलचे शेवटचे ४ अंक (१० अंकी मोबाईल नसेल तर ट्रॅकिंग नाही)
+function keyFor(no, phone){ return JOBNO_RE.test(no || "") && /^\d{10}$/.test(phone || "") ? `${no}-${last4(phone)}` : ""; }
+function trackLinkOf(j){
+  const k = j.trackKey || ""; if(!k) return "";
+  const i = k.lastIndexOf("-");
+  return `${siteBase()}?job=${encodeURIComponent(k.slice(0, i))}&p=${k.slice(i + 1)}`;
+}
+// publicJobs मध्ये फक्त गोपनीय नसलेली माहिती (नाव, मोबाईल, पत्ता, नोट्स नाहीत)
+function publicData(j, jobNumber){
+  const c = calc(j);
+  return { jobNumber, title: j.service || "", status: j.status || "Pending",
+    totalAmount: c.total, paidAmount: c.paid, balance: c.bal,
+    createdAt: j.createdAt || serverTimestamp(), updatedAt: serverTimestamp() };
+}
+// एकाच transaction मध्ये: क्रमांकानुसार Job No. देणे + job save + publicJobs अपडेट
+async function persistJob(jobId, job, patch){
+  const merged = { ...job, ...patch };
+  const year = jobId && job.createdAt?.toDate ? job.createdAt.toDate().getFullYear() : new Date().getFullYear();
+  const counterRef = doc(db, "counters", `jobs-${year}`);
+  const ref = jobId ? doc(db, "jobs", jobId) : doc(collection(db, "jobs"));
+  let jobNumber = "", trackKey = "";
+  await runTransaction(db, async tx => {
+    jobNumber = JOBNO_RE.test(job.jobNumber || "") ? job.jobNumber : "";
+    if(!jobNumber){
+      const cs = await tx.get(counterRef);
+      const next = (cs.exists() ? Number(cs.data().value || 0) : 0) + 1;
+      jobNumber = `SK-${year}-${String(next).padStart(4, "0")}`;
+      tx.set(counterRef, { value: next });
+    }
+    trackKey = keyFor(jobNumber, merged.custPhone);
+    const data = { ...patch, jobNumber, trackKey };
+    if(jobId) tx.update(ref, data);
+    else tx.set(ref, { ...data, ownerUid:"", custEmail:"", documentUrl:"", createdAt: serverTimestamp() });
+    const oldKey = job.trackKey || "";
+    if(oldKey && oldKey !== trackKey) tx.delete(doc(db, "publicJobs", oldKey));
+    if(trackKey) tx.set(doc(db, "publicJobs", trackKey), publicData(merged, jobNumber));
+  });
+  return { id: ref.id, jobNumber, trackKey };
+}
 
 // ---------- Static UI ----------
 $("serviceList").innerHTML = SERVICES.map(([n, d]) => `<details><summary>${esc(n)}</summary><div style="margin-top:6px">लागणारी कागदपत्रे: ${esc(d)}</div></details>`).join("");
 const svcOptions = SERVICES.map(([n]) => `<option>${esc(n)}</option>`).join("");
 $("jService").innerHTML = svcOptions; $("eService").innerHTML = svcOptions;
-digitsOnly($("pPhone"), $("ePhone"));
+digitsOnly($("pPhone"), $("ePhone"), $("trackPhone"));
+$("eService").addEventListener("change", () => {
+  const p = PRICES[$("eService").value];
+  if(p > 0 && num($("eTotal").value) === 0){ $("eTotal").value = p; refreshEditCalc(); }
+});
 
 // ---------- Auth ----------
 $("password").addEventListener("keydown", e => { if(e.key === "Enter") (registerMode ? $("registerBtn") : $("loginBtn")).click(); });
@@ -362,7 +468,7 @@ $("resetBtn").addEventListener("click", async () => {
 $("customerLogout").addEventListener("click", () => signOut(auth));
 $("adminLogout").addEventListener("click", () => signOut(auth));
 
-function hideAll(){ ["authSection","customerSection","adminSection","adminEditor","receiptPrint"].forEach(i => $(i).classList.add("hidden")); }
+function hideAll(){ ["authSection","customerSection","adminSection","adminEditor","receiptPrint","jobCardPrint"].forEach(i => $(i).classList.add("hidden")); }
 function resetState(){
   allJobs = []; sel = null; editPays = []; isAdmin = false;
   ["pName","pPhone","pAddress","jDetails","jFile","password"].forEach(i => $(i).value = "");
@@ -373,14 +479,17 @@ function resetState(){
 onAuthStateChanged(auth, async user => {
   hideAll(); resetState();
   $("servicesCard").classList.remove("hidden");
+  $("trackCard").classList.remove("hidden");
   if(!user){ $("authSection").classList.remove("hidden"); return; }
   try{
     const adminSnap = await getDoc(doc(db, "admins", user.uid));
     if(adminSnap.exists()){
       isAdmin = true;
       $("servicesCard").classList.add("hidden");
+      if(!trackFromUrl) $("trackCard").classList.add("hidden");
       $("adminSection").classList.remove("hidden");
       $("adminEmail").textContent = user.email || "";
+      $("cbDate").value = dkey(new Date());
       await loadJobs();
       return;
     }
@@ -465,7 +574,7 @@ async function loadJobs(){
     allJobs = snap.docs.map(d => ({ ...d.data(), id: d.id }));
     allJobs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
     if(sel && !sel.isNew) sel = allJobs.find(x => x.id === sel.id) || null;
-    isAdmin ? (updateStats(), renderAdminJobs()) : renderMyJobs();
+    isAdmin ? (updateStats(), renderAdminJobs(), showCashbook()) : renderMyJobs();
   }catch(e){ message(isAdmin ? $("adminMsg") : $("customerMsg"), "यादी लोड झाली नाही.", "error"); }
 }
 function renderMyJobs(){
@@ -473,7 +582,7 @@ function renderMyJobs(){
   $("myJobs").innerHTML = allJobs.map(j => {
     const c = calc(j), link = safeUrl(j.documentUrl);
     return `<div class="customer-card">
-      <div class="customer-title"><h3>${esc(j.service || "काम")}</h3><div>${statusBadge(j.status || "Pending")} ${paymentBadge(c.ps)}</div></div>
+      <div class="customer-title"><h3>${esc(j.service || "काम")}${j.jobNumber ? ` <small style="color:var(--gray)">(${esc(j.jobNumber)})</small>` : ""}</h3><div>${statusBadge(j.status || "Pending")} ${paymentBadge(c.ps)}</div></div>
       <div>${esc(j.details || "-")}</div>
       ${link ? `<div style="margin-top:5px"><a href="${esc(link)}" target="_blank" rel="noopener">📄 कागदपत्र पाहा</a></div>` : ""}
       <div style="margin-top:6px">एकूण: ${money(c.total)} | भरलेले: ${money(c.paid)} | <b>बाकी: ${money(c.bal)}</b></div>
@@ -496,7 +605,7 @@ function renderAdminJobs(){
   $("jobList").innerHTML = list.map(j => {
     const c = calc(j), link = safeUrl(j.documentUrl);
     return `<div class="customer-card">
-      <div class="customer-title"><div><h3>${esc(j.custName || "नाव नाही")} — ${esc(j.service || "")}</h3><div>${esc(j.custPhone || "-")}${j.custEmail ? " | " + esc(j.custEmail) : ""}</div></div><div>${statusBadge(j.status || "Pending")}</div></div>
+      <div class="customer-title"><div><h3>${esc(j.custName || "नाव नाही")} — ${esc(j.service || "")}${j.jobNumber ? ` <small style="color:var(--gray)">(${esc(j.jobNumber)})</small>` : ""}</h3><div>${esc(j.custPhone || "-")}${j.custEmail ? " | " + esc(j.custEmail) : ""}</div></div><div>${statusBadge(j.status || "Pending")}</div></div>
       <div style="margin-top:6px">${esc(j.details || "-")}</div>
       ${link ? `<div style="margin-top:5px"><a href="${esc(link)}" target="_blank" rel="noopener">📄 कागदपत्र पाहा</a></div>` : ""}
       <div style="margin-top:6px">${paymentBadge(c.ps)} एकूण: ${money(c.total)} | भरलेले: ${money(c.paid)} | <b>बाकी: ${money(c.bal)}</b></div>
@@ -504,6 +613,7 @@ function renderAdminJobs(){
         <button class="btn-dark btn-small" data-a="manage" data-id="${esc(j.id)}">Manage</button>
         <button class="btn-green btn-small" data-a="wa" data-id="${esc(j.id)}">WhatsApp</button>
         <button class="btn-orange btn-small" data-a="receipt" data-id="${esc(j.id)}">पावती</button>
+        <button class="btn-dark btn-small" data-a="card" data-id="${esc(j.id)}">Job Card</button>
       </div></div>`;
   }).join("");
 }
@@ -516,6 +626,7 @@ $("jobList").addEventListener("click", e => {
   if(b.dataset.a === "manage") openEditor(j);
   if(b.dataset.a === "wa") openWA(j);
   if(b.dataset.a === "receipt") openReceipt(j);
+  if(b.dataset.a === "card") openJobCard(j);
 });
 $("newJobBtn").addEventListener("click", () => openEditor({ isNew:true, status:"Pending", payments:[], totalAmount:0 }));
 
@@ -566,26 +677,28 @@ $("saveJob").addEventListener("click", async () => {
     details:$("eDetails").value.trim(), adminNotes:$("eNotes").value.trim(),
     totalAmount:total, payments:editPays, paidAmount:c.paid, paymentStatus:c.ps, updatedAt:serverTimestamp()
   };
-  const wasCompleted = sel.status === "Completed";
+  const wasCompleted = sel.status === "Completed", wasNew = !!sel.isNew;
+  const oldPayDates = new Set((sel.payments || []).map(p => p.date));
+  const newPays = editPays.filter(p => !oldPayDates.has(p.date));
   $("saveJob").disabled = true;
   try{
-    if(sel.isNew){
-      const r = await addDoc(collection(db, "jobs"), { ...data, ownerUid:"", custEmail:"", documentUrl:"", createdAt:serverTimestamp() });
-      sel = { ...data, id:r.id, ownerUid:"" };
-    }else{
-      await updateDoc(doc(db, "jobs", sel.id), data);
-      sel = { ...sel, ...data };
-    }
-    message($("editorMsg"), "यशस्वीरित्या Save झाले!", "success");
+    // Job No. + job + publicJobs एकाच transaction मध्ये
+    const r = await persistJob(wasNew ? null : sel.id, wasNew ? {} : sel, data);
+    sel = { ...(wasNew ? { ownerUid:"", custEmail:"", documentUrl:"" } : sel), ...data, id:r.id, jobNumber:r.jobNumber, trackKey:r.trackKey };
+    message($("editorMsg"), `यशस्वीरित्या Save झाले! Job No: ${r.jobNumber}` + (r.trackKey ? "" : " (ट्रॅकिंगसाठी १० अंकी मोबाईल हवा)"), "success");
     await loadJobs();
-    if(data.status === "Completed" && !wasCompleted && data.custPhone && confirm("काम पूर्ण झाले. ग्राहकाला WhatsApp संदेश पाठवायचा?")) openWA(sel);
+    if(sel && data.custPhone){
+      if(data.status === "Completed" && !wasCompleted && confirm("काम पूर्ण झाले. ग्राहकाला WhatsApp संदेश पाठवायचा?")) openWA(sel);
+      else if(newPays.length && confirm("पेमेंट पावती WhatsApp वर पाठवायची का?")) openWA(sel, "pay", newPays);
+      else if(wasNew && confirm("नवीन काम नोंदणी मेसेज WhatsApp वर पाठवायचा?")) openWA(sel, "new");
+    }
   }catch(e){ message($("editorMsg"), "Save करताना त्रुटी: " + firebaseError(e.code), "error"); }
   finally{ $("saveJob").disabled = false; }
 });
 $("closeEditor").addEventListener("click", () => { $("adminEditor").classList.add("hidden"); sel = null; });
 
 // ---------- WhatsApp ----------
-function openWA(j){
+function openWA(j, kind = "status", pays = []){
   let phone = String(j.custPhone || "").replace(/\D/g, "");
   if(!phone){ alert("मोबाईल नंबर उपलब्ध नाही."); return; }
   if(phone.length === 10) phone = "91" + phone;
@@ -596,13 +709,18 @@ function openWA(j){
     Completed:"✅ तुमचे काम पूर्ण झाले आहे. कृपया केंद्रावर येऊन घेऊन जावे.",
     Cancelled:"तुमचे काम रद्द करण्यात आले आहे."
   }[st];
-  const text = `*SK COMPUTER सेवा अपडेट*\n\nनमस्कार *${j.custName || "ग्राहक"}*,\n${line}\n\nसेवा: ${j.service || "-"}\nStatus: *${st}*\nएकूण: ${money(c.total)}\nभरलेले: ${money(c.paid)}\n*बाकी: ${money(c.bal)}*\n\nधन्यवाद!\nSK Computer, एकनाथवाडी`;
+  const head = kind === "pay" ? `✅ तुमचे पेमेंट जमा झाले: ${pays.map(p => money(p.amt) + " (" + p.mode + ")").join(", ")}`
+    : kind === "new" ? "तुमचे काम नोंदवले आहे. लवकरच सुरू करू." : line;
+  const tl = trackLinkOf(j);
+  const extra = (j.jobNumber ? `\nJob No: ${j.jobNumber}` : "") + (tl ? `\n\nस्थिती पाहा: ${tl}` : "");
+  const text = `*SK COMPUTER सेवा अपडेट*\n\nनमस्कार *${j.custName || "ग्राहक"}*,\n${head}\n\nसेवा: ${j.service || "-"}\nStatus: *${st}*\nएकूण: ${money(c.total)}\nभरलेले: ${money(c.paid)}\n*बाकी: ${money(c.bal)}*${extra}\n\nधन्यवाद!\nSK Computer, एकनाथवाडी`;
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
 }
 $("waBtn").addEventListener("click", () => { if(sel) openWA({ ...sel, custName:$("eName").value, custPhone:$("ePhone").value, status:$("eStatus").value, service:$("eService").value, totalAmount:$("eTotal").value, payments:editPays }); });
 
 // ---------- Receipt ----------
 function openReceipt(j){
+  $("jobCardPrint").classList.add("hidden");
   const c = calc(j), d = new Date(), z = n => String(n).padStart(2, "0");
   $("rNo").textContent = `SK-${d.getFullYear()}${z(d.getMonth()+1)}${z(d.getDate())}-${String(j.id || "NEW").slice(0, 4).toUpperCase()}`;
   $("rDate").textContent = d.toLocaleDateString("en-IN");
@@ -617,9 +735,104 @@ function openReceipt(j){
   $("receiptPrint").scrollIntoView({ behavior:"smooth" });
 }
 $("receiptBtn").addEventListener("click", () => { if(sel && !sel.isNew) openReceipt({ ...sel, custName:$("eName").value, custPhone:$("ePhone").value, service:$("eService").value, details:$("eDetails").value, totalAmount:$("eTotal").value, payments:editPays }); else message($("editorMsg"), "प्रथम Save करा.", "error"); });
-$("printA4").addEventListener("click", () => { $("receiptBox").classList.remove("small"); window.print(); });
-$("printSmall").addEventListener("click", () => { $("receiptBox").classList.add("small"); window.print(); });
+$("printA4").addEventListener("click", () => { $("receiptBox").classList.remove("small"); setPage("@page{size:A4;margin:10mm}"); window.print(); });
+$("printSmall").addEventListener("click", () => { $("receiptBox").classList.add("small"); setPage("@page{size:80mm auto;margin:2mm}"); window.print(); });
 $("closeReceipt").addEventListener("click", () => $("receiptPrint").classList.add("hidden"));
+
+// ---------- Job Card (QR) ----------
+function openJobCard(j){
+  const c = calc(j), created = j.createdAt?.seconds ? new Date(j.createdAt.seconds * 1000) : new Date();
+  $("jcNo").textContent = j.jobNumber || "(Save केल्यावर मिळेल)";
+  $("jcDate").textContent = created.toLocaleDateString("en-IN");
+  $("jcName").textContent = j.custName || "-"; $("jcPhone").textContent = j.custPhone || "-";
+  $("jcWork").textContent = `${j.service || ""}${j.details ? " - " + j.details : ""}`;
+  $("jcStatus").textContent = j.status || "Pending";
+  $("jcTotal").textContent = money(c.total); $("jcPaid").textContent = money(c.paid); $("jcBal").textContent = money(c.bal);
+  const link = trackLinkOf(j), qr = $("jcQr");
+  qr.innerHTML = "";
+  if(link && typeof QRCode !== "undefined"){
+    try{ new QRCode(qr, { text:link, width:110, height:110, correctLevel:QRCode.CorrectLevel.M }); }catch(e){ console.warn(e); }
+    $("jcQrNote").textContent = "स्कॅन करून कामाची स्थिती पाहा";
+  }else{
+    $("jcQrNote").textContent = "ट्रॅकिंग QR साठी Job No. व १० अंकी मोबाईल आवश्यक आहे (Save करा).";
+  }
+  $("receiptPrint").classList.add("hidden");
+  $("jobCardPrint").classList.remove("hidden");
+  $("jobCardPrint").scrollIntoView({ behavior:"smooth" });
+}
+$("jobCardBtn").addEventListener("click", () => { if(sel && !sel.isNew) openJobCard(sel); else message($("editorMsg"), "प्रथम Save करा.", "error"); });
+$("printJobCard").addEventListener("click", () => { setPage("@page{size:A4;margin:10mm}"); window.print(); });
+$("closeJobCard").addEventListener("click", () => $("jobCardPrint").classList.add("hidden"));
+
+// ---------- Daily Cashbook (आधीच लोड केलेल्या कामांमधून – अतिरिक्त Firestore reads नाहीत) ----------
+function showCashbook(){
+  const day = $("cbDate").value || dkey(new Date());
+  let cash = 0, upi = 0, other = 0; const rows = [];
+  allJobs.forEach(j => (j.payments || []).forEach(p => {
+    if(!p.date || dkey(p.date) !== day) return;
+    const a = num(p.amt);
+    if(p.mode === "रोख") cash += a; else if(p.mode === "UPI") upi += a; else other += a;
+    rows.push({ j, p });
+  }));
+  rows.sort((a, b) => new Date(b.p.date) - new Date(a.p.date));
+  const t = d => new Date(d).toLocaleTimeString("en-IN", { hour:"2-digit", minute:"2-digit" });
+  $("cbResult").innerHTML = `<div class="amount-box" style="margin-top:0">
+      <div class="receipt-row"><b>💵 रोख</b><span>${money(cash)}</span></div>
+      <div class="receipt-row"><b>📲 UPI</b><span>${money(upi)}</span></div>
+      <div class="receipt-row"><b>इतर</b><span>${money(other)}</span></div>
+      <div class="receipt-row"><b>💰 एकूण जमा</b><b>${money(cash + upi + other)}</b></div>
+    </div>
+    <div style="margin-top:10px">${rows.map(({ j, p }) => `<div class="pay-row"><span>${esc(t(p.date))} • ${esc(j.custName || "-")} • ${esc(j.service || "")}${j.jobNumber ? " • " + esc(j.jobNumber) : ""} • ${esc(p.mode)}</span><b>${money(p.amt)}</b></div>`).join("") || `<small style="color:var(--gray)">या दिवशी कोणतेही पेमेंट नाही</small>`}</div>`;
+}
+$("cbShow").addEventListener("click", showCashbook);
+
+// ---------- जुन्या कामांना Job No. देऊन ट्रॅकिंगसाठी तयार करा ----------
+$("syncBtn").addEventListener("click", async () => {
+  if(!isAdmin || !confirm("सर्व कामांना Job No. देऊन ट्रॅकिंगसाठी तयार करायचे? (जुन्या कामांपासून क्रमाने)")) return;
+  $("syncBtn").disabled = true;
+  message($("adminMsg"), "सिंक सुरू आहे...", "info");
+  let ok = 0, noPhone = 0, fail = 0;
+  const jobs = [...allJobs].sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+  for(const j of jobs){
+    try{ const r = await persistJob(j.id, j, {}); r.trackKey ? ok++ : noPhone++; }
+    catch(e){ fail++; console.error(e); }
+  }
+  await loadJobs();
+  message($("adminMsg"), `${ok} काम ट्रॅकिंगसाठी तयार. ${noPhone} मध्ये १० अंकी मोबाईल नाही. ${fail} अयशस्वी.`, fail ? "error" : "success");
+  $("syncBtn").disabled = false;
+});
+
+// ---------- Public tracking (लॉगिनशिवाय) ----------
+async function runTrack(jobNo, p4){
+  const box = $("trackResult");
+  $("trackCard").classList.remove("hidden"); box.classList.remove("hidden");
+  box.innerHTML = "⏳ शोधत आहे...";
+  try{
+    const s = await getDoc(doc(db, "publicJobs", `${jobNo}-${p4}`));
+    if(!s.exists()){ box.innerHTML = `<div class="center error">कोणतेही काम सापडले नाही. Job No. आणि मोबाईलचे शेवटचे ४ अंक तपासा.</div>`; return; }
+    const d = s.data(), c = calc({ totalAmount:d.totalAmount, payments:[{ amt:d.paidAmount }] });
+    box.innerHTML = `<div class="customer-card">
+      <div class="customer-title"><h3>${esc(d.title || "सेवा")} <small style="color:var(--gray)">(${esc(d.jobNumber)})</small></h3><div>${statusBadge(d.status || "Pending")} ${paymentBadge(c.ps)}</div></div>
+      <div style="margin-top:6px">एकूण: ${money(c.total)} | भरलेले: ${money(c.paid)} | <b>बाकी: ${money(c.bal)}</b></div>
+      <small style="color:var(--gray)">दिनांक: ${d.createdAt?.seconds ? fmtDate(d.createdAt.seconds * 1000) : "-"}</small>
+    </div>`;
+  }catch(e){ box.innerHTML = `<div class="center error">माहिती आणताना त्रुटी आली. पुन्हा प्रयत्न करा.</div>`; }
+}
+$("trackBtn").addEventListener("click", () => {
+  const no = $("trackJob").value.trim().toUpperCase(), p4 = $("trackPhone").value.replace(/\D/g, "");
+  if(!JOBNO_RE.test(no) || p4.length !== 4){
+    $("trackResult").classList.remove("hidden");
+    $("trackResult").innerHTML = `<div class="center error">Job No. (उदा. SK-2026-0001) आणि मोबाईलचे शेवटचे ४ अंक टाका.</div>`;
+    return;
+  }
+  runTrack(no, p4);
+});
+// QR स्कॅन करून आल्यास (?job=SK-2026-0001&p=1234) थेट स्थिती दाखवा
+(function(){
+  const q = new URLSearchParams(location.search);
+  const j = (q.get("job") || "").trim().toUpperCase(), p = (q.get("p") || "").replace(/\D/g, "");
+  if(JOBNO_RE.test(j) && p.length === 4){ trackFromUrl = true; $("trackJob").value = j; $("trackPhone").value = p; runTrack(j, p); }
+})();
 </script>
 </body>
 </html>
