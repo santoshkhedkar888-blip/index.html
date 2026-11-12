@@ -1,7 +1,6 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-
     function signedIn() {
       return request.auth != null;
     }
@@ -11,15 +10,24 @@ service firebase.storage {
         firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
     }
 
-    // customer_docs/<uid>/<फाईल>
+    // index.html uploads admin job attachments to jobs/<customer-phone>/<file>.
+    // Restrict access to admins and accept only small images or PDF files.
+    match /jobs/{customerPhone}/{fileName} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.size <= 5 * 1024 * 1024
+        && (request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/pdf');
+      allow delete: if isAdmin();
+    }
+
+    // Retain the existing customer portal upload path and limits.
     match /customer_docs/{uid}/{fileName} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
-
       allow create: if signedIn() && request.auth.uid == uid
-        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.size <= 5 * 1024 * 1024
         && (request.resource.contentType.matches('image/.*')
-            || request.resource.contentType == 'application/pdf');
-
+          || request.resource.contentType == 'application/pdf');
       allow update, delete: if isAdmin();
     }
   }

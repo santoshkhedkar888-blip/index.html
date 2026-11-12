@@ -1,61 +1,98 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
 
-    function signedIn() { return request.auth != null; }
-    function verified() { return signedIn() && request.auth.token.email_verified == true; }
+    function verified() {
+      return signedIn() && request.auth.token.email_verified == true;
+    }
+
     function isAdmin() {
       return signedIn() &&
         exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
-    function validDocUrl(u) {
-      return u == "" || u.matches('https://firebasestorage.googleapis.com/.*');
+
+    function validAmounts(data) {
+      return data.totalAmount is number && data.paidAmount is number &&
+        data.totalAmount >= 0 && data.paidAmount >= 0 &&
+        data.paidAmount <= data.totalAmount;
     }
 
-    // Admin यादी: फक्त Console मधून बदल
+    function validDocUrl(url) {
+      return url == '' ||
+        (url is string && url.matches('https://firebasestorage.googleapis.com/.*'));
+    }
+
     match /admins/{uid} {
       allow get: if signedIn() && request.auth.uid == uid;
       allow list, write: if false;
     }
 
-    // ग्राहकाची स्वतःची माहिती
     match /customers/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow create, update: if verified() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['name','phone','address','email','updatedAt'])
+        && request.resource.data.keys().hasOnly(['name', 'phone', 'address', 'email', 'updatedAt'])
         && request.resource.data.email == request.auth.token.email;
       allow delete: if isAdmin();
     }
 
-    // कामे (जॉब कार्ड)
     match /jobs/{id} {
-      allow read: if signedIn() && (isAdmin() || resource.data.ownerUid == request.auth.uid);
+      // A phone-authenticated customer can read only jobs for their verified +91 number.
+      // Email customers can read jobs they own; admins can read all jobs.
+      allow get, list: if isAdmin() || (signedIn() && (
+        resource.data.ownerUid == request.auth.uid ||
+        (request.auth.token.phone_number != null &&
+          request.auth.token.phone_number == '+91' + resource.data.custPhone)
+      ));
 
-      // ग्राहक फक्त Pending, ० रक्कम, रिकामे पेमेंट असलेले काम नोंदवू शकतो
-      // (jobNumber / trackKey सारखी फील्ड ग्राहक स्वतः टाकू शकत नाही – फक्त ॲडमिन)
-      allow create: if isAdmin() || (verified()
-        && request.resource.data.keys().hasOnly(['ownerUid','custName','custPhone','custEmail','service','details','documentUrl','status','totalAmount','paidAmount','paymentStatus','payments','adminNotes','createdAt','updatedAt'])
+      allow create: if isAdmin()
+        && validAmounts(request.resource.data)
+        && validDocUrl(request.resource.data.documentUrl);
+
+      // Preserve the email customer self-service flow for zero-fee pending requests.
+      allow create: if verified()
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'custName', 'custPhone', 'custEmail', 'service', 'details',
+          'documentUrl', 'status', 'totalAmount', 'paidAmount', 'paymentStatus',
+          'payments', 'adminNotes', 'createdAt', 'updatedAt'
+        ])
         && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.status == "Pending"
+        && request.resource.data.status == 'Pending'
         && request.resource.data.totalAmount == 0
         && request.resource.data.paidAmount == 0
-        && request.resource.data.paymentStatus == "Unpaid"
+        && request.resource.data.paymentStatus == 'Unpaid'
         && request.resource.data.payments.size() == 0
-        && request.resource.data.adminNotes == ""
-        && validDocUrl(request.resource.data.documentUrl));
+        && request.resource.data.adminNotes == ''
+        && validDocUrl(request.resource.data.documentUrl);
 
-      allow update, delete: if isAdmin();
+      // Validate every saved amount in the database, not only in the browser UI.
+      allow update: if isAdmin() && validAmounts(request.resource.data)
+        && validDocUrl(request.resource.data.documentUrl);
+      allow delete: if isAdmin();
     }
 
-    // लॉगिनशिवाय ट्रॅकिंग: document ID = "SK-2026-0001-1234" (Job No. + मोबाईलचे शेवटचे ४ अंक)
-    // फक्त get परवानगी, list बंद. यात नाव/मोबाईल/पत्ता नाही – फक्त सेवा, स्थिती व रकमा.
     match /publicJobs/{trackId} {
+      // Public tracking intentionally returns only non-identifying job details.
       allow get: if true;
       allow list: if false;
-      allow write: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly([
+          'jobNumber', 'title', 'status', 'totalAmount', 'paidAmount',
+          'balance', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.totalAmount is number
+        && request.resource.data.paidAmount is number
+        && request.resource.data.balance is number
+        && request.resource.data.totalAmount >= 0
+        && request.resource.data.paidAmount >= 0
+        && request.resource.data.paidAmount <= request.resource.data.totalAmount
+        && request.resource.data.balance ==
+          request.resource.data.totalAmount - request.resource.data.paidAmount;
+      allow delete: if isAdmin();
     }
 
-    // Job क्रमांक काउंटर: फक्त ॲडमिन
     match /counters/{counterId} {
       allow read, write: if isAdmin();
     }
