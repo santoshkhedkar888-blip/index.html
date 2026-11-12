@@ -1,1138 +1,289 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="mr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SK Computer - आपले सरकार व डिजिटल सेवा केंद्र</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-  #printArea { display: none; }
-  @media print {
-    body * { visibility: hidden; }
-    #printArea, #printArea * { visibility: visible; }
-    #printArea { display: block; position: absolute; left: 0; top: 0; width: 100%; padding: 24px; }
-  }
-  .receipt-table th, .receipt-table td { border: 1px solid #333; padding: 6px 10px; }
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SK Computer - सेवा केंद्र</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @media print { body * { visibility:hidden } #receipt,#receipt * { visibility:visible } #receipt { display:block!important; position:absolute; inset:0; margin:auto; width:100%; padding:20px } }
+  </style>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
-
-<!-- TOP HEADER & PORTAL SWITCHER -->
-<header class="bg-blue-900 text-white shadow-md sticky top-0 z-30">
-  <div class="max-w-6xl mx-auto px-4 py-2.5 flex flex-wrap justify-between items-center gap-2">
-    <div class="flex items-center gap-2">
-      <i class="fa-solid fa-laptop-code text-xl text-yellow-400"></i>
-      <div>
-        <div class="font-bold text-base sm:text-lg leading-tight tracking-wide">SK COMPUTER</div>
-        <div class="text-[11px] text-blue-200">आपले सरकार व डिजिटल सेवा केंद्र, एकनाथवाडी (पाथर्डी)</div>
-      </div>
-    </div>
-    <div class="flex items-center gap-2 text-xs flex-wrap">
-      <button id="navAdminBtn" class="bg-blue-700 hover:bg-blue-600 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 shadow-sm">
-        <i class="fa-solid fa-user-shield"></i> ॲडमिन पॅनल
-      </button>
-      <button id="navCustBtn" class="bg-blue-800 hover:bg-blue-600 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 shadow-sm">
-        <i class="fa-solid fa-mobile-screen"></i> ग्राहक लॉगिन (OTP)
-      </button>
-      <button id="navTrackBtn" class="bg-blue-800 hover:bg-blue-600 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 shadow-sm">
-        <i class="fa-solid fa-magnifying-glass"></i> थेट ट्रॅकिंग
-      </button>
-      <a href="https://wa.me/918888146077" target="_blank" rel="noopener" class="bg-green-600 hover:bg-green-500 px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 shadow-sm text-white">
-        <i class="fa-brands fa-whatsapp"></i> संपर्क
-      </a>
-    </div>
+<body class="min-h-screen bg-slate-100 text-slate-800">
+<header class="sticky top-0 z-20 bg-blue-900 p-3 text-white shadow">
+  <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+    <div><b>SK COMPUTER</b><div class="text-xs text-blue-200">आपले सरकार व डिजिटल सेवा केंद्र, एकनाथवाडी (पाथर्डी)</div></div>
+    <nav class="flex flex-wrap gap-2 text-sm">
+      <button id="navAdmin" class="rounded bg-blue-700 px-3 py-2">ॲडमिन</button>
+      <button id="navCustomer" class="rounded bg-blue-800 px-3 py-2">ग्राहक OTP</button>
+      <button id="navTrack" class="rounded bg-blue-800 px-3 py-2">काम ट्रॅक करा</button>
+      <a class="rounded bg-green-600 px-3 py-2" href="https://wa.me/918888146077" target="_blank" rel="noopener">WhatsApp</a>
+    </nav>
   </div>
 </header>
+<main class="mx-auto max-w-5xl space-y-4 p-4">
+  <section id="adminLogin" class="mx-auto max-w-sm rounded-xl bg-white p-5 shadow">
+    <h1 class="mb-3 text-xl font-bold">ॲडमिन लॉगिन</h1>
+    <form id="loginForm" class="space-y-3">
+      <input id="email" type="email" required autocomplete="username" placeholder="ईमेल" class="w-full rounded border p-2">
+      <input id="password" type="password" required autocomplete="current-password" placeholder="पासवर्ड" class="w-full rounded border p-2">
+      <button class="w-full rounded bg-blue-600 p-2 font-semibold text-white">लॉगिन</button>
+    </form><p id="loginMsg" class="mt-2 text-sm text-red-600"></p>
+  </section>
 
-<!-- ================= 1. ADMIN PORTAL ================= -->
-<div id="sectionAdmin">
-  <!-- Admin Login Form -->
-  <div id="adminLoginBox" class="min-h-[80vh] flex items-center justify-center p-4">
-    <form id="adminLoginForm" class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-sm space-y-4 border border-slate-200">
-      <div class="text-center">
-        <div class="w-14 h-14 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-2xl mx-auto mb-2">
-          <i class="fa-solid fa-lock"></i>
-        </div>
-        <h2 class="text-xl font-bold text-slate-800">ॲडमिन लॉगिन</h2>
-        <p class="text-xs text-slate-500 mt-1">फक्त अधिकृत केंद्र चालकांसाठी</p>
-      </div>
-      <div>
-        <label class="text-xs font-semibold text-slate-600">ॲडमिन ईमेल</label>
-        <input id="adminEmail" type="email" required placeholder="admin@gmail.com" class="w-full border rounded-lg p-2.5 mt-1 outline-none focus:ring-2 focus:ring-blue-600 text-sm">
-      </div>
-      <div>
-        <label class="text-xs font-semibold text-slate-600">पासवर्ड</label>
-        <input id="adminPassword" type="password" required placeholder="••••••••" class="w-full border rounded-lg p-2.5 mt-1 outline-none focus:ring-2 focus:ring-blue-600 text-sm">
-      </div>
-      <button id="adminLoginSubmit" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-2.5 font-semibold text-sm transition shadow">
-        लॉगिन करा
-      </button>
-      <p id="adminLoginErr" class="text-red-600 text-xs text-center font-medium min-h-[16px]"></p>
-    </form>
-  </div>
-
-  <!-- Admin Main Dashboard -->
-  <div id="adminApp" class="hidden">
-    <!-- Sub Nav for Admin Tabs -->
-    <nav class="bg-white shadow-sm flex text-xs sm:text-sm sticky top-[57px] z-20 border-b border-slate-200">
-      <button data-tab="dash" class="admin-tab flex-1 py-3 px-2 font-semibold text-center border-b-2 border-transparent transition flex justify-center items-center gap-1.5">
-        <i class="fa-solid fa-chart-pie"></i> डॅशबोर्ड
-      </button>
-      <button data-tab="jobs" class="admin-tab flex-1 py-3 px-2 font-semibold text-center border-b-2 border-transparent transition flex justify-center items-center gap-1.5">
-        <i class="fa-solid fa-id-card"></i> जॉब कार्ड्स
-      </button>
-      <button data-tab="cust" class="admin-tab flex-1 py-3 px-2 font-semibold text-center border-b-2 border-transparent transition flex justify-center items-center gap-1.5">
-        <i class="fa-solid fa-users"></i> ग्राहक यादी
-      </button>
-      <button data-tab="cash" class="admin-tab flex-1 py-3 px-2 font-semibold text-center border-b-2 border-transparent transition flex justify-center items-center gap-1.5">
-        <i class="fa-solid fa-cash-register"></i> दैनिक गल्ला
-      </button>
-      <button id="adminLogoutBtn" class="text-red-600 hover:bg-red-50 py-3 px-4 font-semibold text-center border-b-2 border-transparent transition flex items-center gap-1">
-        <i class="fa-solid fa-right-from-bracket"></i> लॉगआउट
-      </button>
-    </nav>
-
-    <main class="p-4 max-w-5xl mx-auto space-y-4">
-      <!-- Tab 1: Dashboard Stats -->
-      <section id="tab-dash" class="space-y-4">
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
-            <div class="text-xs text-slate-500 font-medium">एकूण कामे</div>
-            <div id="sTotal" class="text-2xl font-bold mt-1 text-slate-800">0</div>
-          </div>
-          <div class="bg-yellow-50 rounded-xl p-4 shadow-sm border border-yellow-200">
-            <div class="text-xs text-yellow-800 font-medium">प्रलंबित (Pending)</div>
-            <div id="sPending" class="text-2xl font-bold text-yellow-900 mt-1">0</div>
-          </div>
-          <div class="bg-blue-50 rounded-xl p-4 shadow-sm border border-blue-200">
-            <div class="text-xs text-blue-800 font-medium">प्रक्रियेत (Processing)</div>
-            <div id="sProc" class="text-2xl font-bold text-blue-900 mt-1">0</div>
-          </div>
-          <div class="bg-green-50 rounded-xl p-4 shadow-sm border border-green-200">
-            <div class="text-xs text-green-800 font-medium">पूर्ण (Completed)</div>
-            <div id="sDone" class="text-2xl font-bold text-green-900 mt-1">0</div>
-          </div>
-          <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 col-span-2 sm:col-span-2">
-            <div class="text-xs text-slate-500 font-medium">एकूण बिलिंग रक्कम</div>
-            <div id="sAmt" class="text-2xl font-bold text-slate-800 mt-1">₹0.00</div>
-          </div>
-          <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 col-span-2 sm:col-span-2">
-            <div class="text-xs text-slate-500 font-medium">बाकी रक्कम (उधारी)</div>
-            <div id="sDue" class="text-2xl font-bold text-red-600 mt-1">₹0.00</div>
-          </div>
-        </div>
-
-        <!-- Quick Actions Banner -->
-        <div class="bg-gradient-to-r from-blue-700 to-indigo-800 text-white rounded-2xl p-5 shadow flex flex-wrap justify-between items-center gap-3">
-          <div>
-            <h3 class="font-bold text-base sm:text-lg">नवीन काम नोंदवा किंवा जॉब शोधा</h3>
-            <p class="text-xs text-blue-100">ग्राहकाची नोंदणी करून पावती प्रिंट करा किंवा WhatsApp वर पाठवा.</p>
-          </div>
-          <div class="flex gap-2">
-            <button id="dashNewJobBtn" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold px-4 py-2 rounded-lg text-xs sm:text-sm transition shadow flex items-center gap-1.5">
-              <i class="fa-solid fa-plus"></i> नवीन काम
-            </button>
-            <button id="exportCsvBtn" class="bg-blue-900 hover:bg-blue-950 text-white px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition shadow flex items-center gap-1.5">
-              <i class="fa-solid fa-file-csv"></i> CSV Export
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Tab 2: Job Cards -->
-      <section id="tab-jobs" class="hidden space-y-3">
-        <div class="flex flex-col sm:flex-row gap-2">
-          <input id="jobSearch" placeholder="नाव / मोबाईल / जॉब क्र. / सेवा शोधा..." class="flex-1 border rounded-lg p-2.5 bg-white shadow-sm outline-none focus:ring-2 focus:ring-blue-600 text-sm">
-          <div class="flex gap-2">
-            <select id="jobFilter" class="border rounded-lg p-2.5 bg-white shadow-sm font-medium text-sm">
-              <option value="">सर्व स्थिती (All)</option>
-              <option value="Pending">प्रलंबित (Pending)</option>
-              <option value="Processing">प्रक्रियेत (Processing)</option>
-              <option value="Completed">पूर्ण (Completed)</option>
-              <option value="Cancelled">रद्द (Cancelled)</option>
-            </select>
-            <button id="newJobBtn" class="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-4 py-2 font-semibold shadow transition whitespace-nowrap text-sm flex items-center gap-1.5">
-              <i class="fa-solid fa-plus"></i> नवीन काम
-            </button>
-          </div>
-        </div>
-        <div id="jobList" class="space-y-3"></div>
-      </section>
-
-      <!-- Tab 3: Customer List -->
-      <section id="tab-cust" class="hidden space-y-3">
-        <input id="custSearch" placeholder="ग्राहक नाव किंवा मोबाईल नंबर शोधा..." class="w-full border rounded-lg p-2.5 bg-white shadow-sm outline-none focus:ring-2 focus:ring-blue-600 text-sm">
-        <div id="custList" class="space-y-2"></div>
-      </section>
-
-      <!-- Tab 4: Daily Cashbook -->
-      <section id="tab-cash" class="hidden space-y-3">
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-3">
-          <div class="flex items-center gap-2">
-            <label class="text-sm font-semibold text-slate-700">दिनांक निवडा:</label>
-            <input type="date" id="cashbookDate" class="border rounded-lg p-2 text-sm">
-          </div>
-          <button id="refreshCashbook" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-lg font-semibold transition">
-            <i class="fa-solid fa-rotate"></i> ताजे करा
-          </button>
-        </div>
-        <div id="cashbookSummary" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
-        <div id="cashbookList" class="space-y-2"></div>
-      </section>
-    </main>
-  </div>
-</div>
-
-<!-- ================= 2. CUSTOMER PORTAL (OTP) ================= -->
-<div id="sectionCust" class="hidden">
-  <!-- OTP Login Box -->
-  <div id="custLoginBox" class="min-h-[80vh] flex items-center justify-center p-4">
-    <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-sm space-y-4 border border-slate-200">
-      <div class="text-center">
-        <div class="w-14 h-14 bg-green-100 text-green-700 rounded-full flex items-center justify-center text-2xl mx-auto mb-2">
-          <i class="fa-solid fa-mobile-screen"></i>
-        </div>
-        <h2 class="text-xl font-bold text-slate-800">ग्राहक सेवा केंद्र</h2>
-        <p class="text-xs text-slate-500 mt-1">तुमच्या मोबाईल नंबरवर OTP पाठवून लॉगिन करा</p>
-      </div>
-
-      <!-- Step 1: Phone -->
-      <div id="phoneStep" class="space-y-3">
-        <div>
-          <label class="text-xs font-semibold text-slate-600">तुमचा १० अंकी मोबाईल नंबर</label>
-          <div class="flex mt-1">
-            <span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-slate-300 bg-slate-100 text-slate-600 text-sm font-semibold">+91</span>
-            <input id="custPhoneInput" type="tel" maxlength="10" placeholder="9876543210" class="flex-1 border rounded-r-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-600 text-sm font-mono">
-          </div>
-        </div>
-        <div id="recaptcha-container" class="my-2 flex justify-center"></div>
-        <button id="sendOtpBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-2.5 font-semibold text-sm transition shadow">
-          OTP पाठवा
-        </button>
-      </div>
-
-      <!-- Step 2: OTP -->
-      <div id="otpStep" class="hidden space-y-3">
-        <div>
-          <label class="text-xs font-semibold text-slate-600">प्राप्त झालेला ६ अंकी OTP टाका</label>
-          <input id="otpCodeInput" type="text" maxlength="6" placeholder="123456" class="w-full border rounded-lg p-2.5 mt-1 outline-none focus:ring-2 focus:ring-blue-600 text-center tracking-widest font-mono text-lg font-bold">
-        </div>
-        <button id="verifyOtpBtn" class="w-full bg-green-600 hover:bg-green-700 text-white rounded-lg p-2.5 font-semibold text-sm transition shadow">
-          पडताळणी करा आणि लॉगिन व्हा
-        </button>
-        <button id="changeNumBtn" class="w-full text-xs text-slate-500 hover:underline text-center block pt-1">
-          दुसरा मोबाईल नंबर वापरा
-        </button>
-      </div>
-
-      <p id="custAuthMsg" class="text-xs text-center font-medium min-h-[16px]"></p>
+  <section id="customerLogin" class="hidden mx-auto max-w-sm rounded-xl bg-white p-5 shadow">
+    <h2 class="mb-3 text-xl font-bold">ग्राहक लॉगिन (OTP)</h2>
+    <div id="phoneStep" class="space-y-3">
+      <input id="phone" type="tel" inputmode="numeric" maxlength="10" placeholder="१० अंकी मोबाईल नंबर" class="w-full rounded border p-2">
+      <div id="recaptcha-container"></div>
+      <button id="sendOtp" class="w-full rounded bg-blue-600 p-2 text-white">OTP पाठवा</button>
     </div>
-  </div>
+    <div id="codeStep" class="hidden space-y-3">
+      <input id="otp" inputmode="numeric" maxlength="6" placeholder="६ अंकी OTP" class="w-full rounded border p-2">
+      <button id="verifyOtp" class="w-full rounded bg-green-600 p-2 text-white">OTP पडताळा</button>
+      <button id="changePhone" class="w-full text-sm text-blue-700">दुसरा नंबर वापरा</button>
+    </div><p id="customerMsg" class="mt-2 text-sm"></p>
+  </section>
 
-  <!-- Customer Dashboard -->
-  <div id="custDashboard" class="hidden">
-    <div class="bg-white border-b shadow-sm sticky top-[57px] z-20">
-      <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-        <div class="flex items-center gap-2">
-          <span class="text-xs text-slate-500">लॉगिन क्रमांक:</span>
-          <span id="custUserBadge" class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded font-mono font-bold"></span>
-        </div>
-        <button id="custLogoutBtn" class="text-red-600 hover:bg-red-50 text-xs px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1 border border-red-200">
-          <i class="fa-solid fa-right-from-bracket"></i> बाहेर पडा
-        </button>
-      </div>
+  <section id="trackSection" class="hidden rounded-xl bg-white p-5 shadow">
+    <h2 class="mb-3 text-xl font-bold">कामाची स्थिती तपासा</h2>
+    <p class="mb-3 text-sm text-slate-600">Job No. आणि मोबाईलचे शेवटचे ४ अंक टाका.</p>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <input id="trackJob" placeholder="SK-2026-0001" class="rounded border p-2 font-mono uppercase">
+      <input id="trackLast4" inputmode="numeric" maxlength="4" placeholder="मोबाईलचे शेवटचे ४ अंक" class="rounded border p-2 font-mono">
     </div>
+    <button id="trackButton" class="mt-3 rounded bg-blue-600 px-4 py-2 text-white">शोधा</button>
+    <div id="trackResult" class="mt-3"></div>
+  </section>
 
-    <main class="max-w-4xl mx-auto p-4 space-y-4">
-      <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 flex justify-between items-center flex-wrap gap-2">
-        <div>
-          <h2 class="text-base font-bold text-slate-800">तुमची सर्व कामे आणि कागदपत्रे</h2>
-          <p class="text-xs text-slate-500 mt-0.5">कामाची सद्यस्थिती तपासा, पावती प्रिंट करा व कागदपत्रे डाउनलोड करा.</p>
-        </div>
-        <div class="text-right">
-          <span class="text-xs text-slate-500">एकूण कामे:</span>
-          <span id="custJobTotal" class="font-bold text-blue-700 text-lg ml-1">0</span>
-        </div>
-      </div>
+  <section id="adminApp" class="hidden space-y-4">
+    <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white p-4 shadow">
+      <h2 class="text-xl font-bold">ॲडमिन डॅशबोर्ड</h2><button id="logout" class="rounded bg-red-600 px-3 py-2 text-white">लॉगआउट</button>
+    </div>
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div class="rounded bg-white p-3 shadow">एकूण कामे <b id="countAll" class="block text-xl">0</b></div>
+      <div class="rounded bg-yellow-50 p-3 shadow">प्रलंबित <b id="countPending" class="block text-xl">0</b></div>
+      <div class="rounded bg-blue-50 p-3 shadow">प्रक्रियेत <b id="countProcessing" class="block text-xl">0</b></div>
+      <div class="rounded bg-green-50 p-3 shadow">पूर्ण <b id="countCompleted" class="block text-xl">0</b></div>
+    </div>
+    <div class="flex flex-wrap gap-2 rounded-xl bg-white p-4 shadow">
+      <input id="searchJobs" placeholder="नाव / मोबाईल / Job No. शोधा" class="min-w-48 flex-1 rounded border p-2">
+      <button id="newJob" class="rounded bg-blue-600 px-4 py-2 text-white">+ नवीन काम</button>
+      <button id="exportCsv" class="rounded bg-slate-700 px-4 py-2 text-white">CSV Export</button>
+    </div>
+    <div id="jobFormWrap" class="hidden rounded-xl bg-white p-4 shadow">
+      <h3 class="mb-3 text-lg font-bold">नवीन जॉब कार्ड</h3>
+      <form id="jobForm" class="grid gap-3 sm:grid-cols-2">
+        <input id="jobName" required maxlength="120" placeholder="ग्राहकाचे पूर्ण नाव" class="rounded border p-2">
+        <input id="jobPhone" required pattern="[0-9]{10}" inputmode="numeric" maxlength="10" placeholder="१० अंकी मोबाईल" class="rounded border p-2">
+        <select id="service" required class="rounded border bg-white p-2 sm:col-span-2"></select>
+        <input id="totalAmount" type="number" required min="0" max="10000000" step="0.01" placeholder="एकूण फी ₹" class="rounded border p-2">
+        <input id="initialPaid" type="number" min="0" max="10000000" step="0.01" value="0" placeholder="मिळालेली रक्कम ₹" class="rounded border p-2">
+        <textarea id="details" maxlength="2000" placeholder="कामाचे तपशील / सूचना" class="rounded border p-2 sm:col-span-2"></textarea>
+        <label class="text-sm sm:col-span-2">कागदपत्र (फोटो/PDF, कमाल ५ MB)<input id="jobFile" type="file" accept="image/*,application/pdf" class="mt-1 block w-full"></label>
+        <div class="flex gap-2 sm:col-span-2"><button id="saveJob" class="rounded bg-green-600 px-4 py-2 text-white">सेव्ह</button><button type="button" id="cancelJob" class="rounded border px-4 py-2">रद्द</button></div>
+      </form><p id="jobMsg" class="mt-2 text-sm"></p>
+    </div>
+    <div id="jobsList" class="space-y-3"></div>
+    <section class="rounded-xl bg-white p-4 shadow">
+      <div class="flex flex-wrap items-center gap-2"><h3 class="font-bold">दैन���क गल्ला</h3><input id="cashDate" type="date" class="rounded border p-2"></div>
+      <div id="cashSummary" class="mt-3"></div>
+    </section>
+  </section>
 
-      <div id="customerJobsView" class="space-y-3"></div>
-    </main>
-  </div>
-</div>
-
-<!-- ================= 3. PUBLIC TRACKING (NO LOGIN) ================= -->
-<div id="sectionTrack" class="hidden p-4 max-w-2xl mx-auto space-y-4 min-h-[80vh]">
-  <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-4">
-    <div class="text-center">
-      <div class="w-12 h-12 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xl mx-auto mb-2">
-        <i class="fa-solid fa-magnifying-glass"></i>
-      </div>
-      <h2 class="text-lg font-bold text-slate-800">कामाची स्थिती तपासा (Live Tracking)</h2>
-      <p class="text-xs text-slate-500 mt-1">लॉगिन न करता: Job No. आणि मोबाईलचे शेवटचे ४ अंक टाका.</p>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div>
-        <label class="text-xs font-semibold text-slate-600">Job No.</label>
-        <input id="trackJobInput" placeholder="उदा. SK-2026-0001" class="w-full border rounded-lg p-2.5 mt-1 text-sm outline-none focus:ring-2 focus:ring-blue-600 uppercase font-mono">
-      </div>
-      <div>
-        <label class="text-xs font-semibold text-slate-600">मोबाईलचे शेवटचे ४ अंक</label>
-        <input id="trackPhoneInput" maxlength="4" placeholder="उदा. 6077" class="w-full border rounded-lg p-2.5 mt-1 text-sm outline-none focus:ring-2 focus:ring-blue-600 font-mono">
-      </div>
-    </div>
-    <button id="trackSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-2.5 font-semibold text-sm transition shadow flex justify-center items-center gap-2">
-      <i class="fa-solid fa-search"></i> स्थिती शोधा
-    </button>
-    <div id="trackResultBox" class="hidden pt-2"></div>
-  </div>
-
-  <!-- Services & Documents Accordion -->
-  <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 space-y-3">
-    <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
-      <i class="fa-solid fa-file-circle-check text-blue-600"></i> शासकीय सेवा व लागणारी कागदपत्रे
-    </h3>
-    <div id="servicesAccordion" class="space-y-2 text-sm"></div>
-  </div>
-</div>
-
-<!-- ================= 4. JOB CREATION MODAL ================= -->
-<div id="jobModal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center p-3 z-50">
-  <form id="jobForm" class="bg-white rounded-2xl p-5 w-full max-w-md space-y-3 max-h-[92vh] overflow-y-auto shadow-2xl border">
-    <div class="flex justify-between items-center border-b pb-2">
-      <h2 class="font-bold text-lg text-slate-800 flex items-center gap-2">
-        <i class="fa-solid fa-folder-plus text-blue-600"></i> नवीन जॉब कार्ड तयार करा
-      </h2>
-      <button type="button" id="jCloseX" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
-    </div>
-    <div>
-      <label class="text-xs font-semibold text-slate-600">ग्राहकाचे पूर्ण नाव *</label>
-      <input id="jName" required placeholder="उदा. रमेश मारुती पाटील" class="w-full border rounded-lg p-2 mt-1 text-sm outline-none focus:ring-2 focus:ring-blue-600">
-    </div>
-    <div>
-      <label class="text-xs font-semibold text-slate-600">मोबाईल नंबर (१० अंक) *</label>
-      <input id="jMobile" required pattern="[0-9]{10}" maxlength="10" placeholder="9876543210" class="w-full border rounded-lg p-2 mt-1 text-sm outline-none focus:ring-2 focus:ring-blue-600 font-mono">
-    </div>
-    <div>
-      <label class="text-xs font-semibold text-slate-600">सेवा निवडा *</label>
-      <select id="jService" class="w-full border rounded-lg p-2 mt-1 bg-white text-sm outline-none focus:ring-2 focus:ring-blue-600"></select>
-    </div>
-    <div class="grid grid-cols-2 gap-2">
-      <div>
-        <label class="text-xs font-semibold text-slate-600">एकूण फी (₹) *</label>
-        <input id="jAmount" type="number" min="0" step="1" required placeholder="0" class="w-full border rounded-lg p-2 mt-1 text-sm outline-none focus:ring-2 focus:ring-blue-600">
-      </div>
-      <div>
-        <label class="text-xs font-semibold text-slate-600">मिळालेली रक्कम (₹)</label>
-        <input id="jPaid" type="number" min="0" step="1" value="0" placeholder="0" class="w-full border rounded-lg p-2 mt-1 text-sm outline-none focus:ring-2 focus:ring-blue-600">
-      </div>
-    </div>
-    <div>
-      <label class="text-xs font-semibold text-slate-600">कामाचे तपशील / विशेष सूचना</label>
-      <textarea id="jNotes" rows="2" placeholder="काही विशेष माहिती असल्यास..." class="w-full border rounded-lg p-2 mt-1 text-sm outline-none focus:ring-2 focus:ring-blue-600"></textarea>
-    </div>
-    <div>
-      <label class="text-xs font-semibold text-slate-600">कागदपत्र (Photo / PDF - ऐच्छिक)</label>
-      <input id="jFile" type="file" accept="image/*,application/pdf" class="w-full text-xs mt-1 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700">
-    </div>
-    <div class="flex gap-2 pt-2">
-      <button type="button" id="jCancel" class="flex-1 border rounded-lg p-2.5 font-medium hover:bg-slate-50 text-sm">रद्द करा</button>
-      <button id="jSave" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg p-2.5 font-semibold transition text-sm shadow">सेव्ह करा</button>
-    </div>
-  </form>
-</div>
-
-<!-- ================= 5. PRINT INVOICE AREA ================= -->
-<div id="printArea"></div>
-
+  <section id="customerApp" class="hidden rounded-xl bg-white p-4 shadow">
+    <div class="mb-4 flex items-center justify-between"><h2 class="text-xl font-bold">तुमची कामे</h2><button id="customerLogout" class="rounded bg-red-600 px-3 py-2 text-white">बाहेर पडा</button></div>
+    <div id="customerJobs" class="space-y-3"></div>
+  </section>
+</main>
+<div id="receipt" class="hidden"></div>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, RecaptchaVerifier, signInWithPhoneNumber } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, updateDoc, getDoc, onSnapshot, query, where, orderBy, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, RecaptchaVerifier, signInWithPhoneNumber } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, getDoc, onSnapshot, query, where, orderBy, serverTimestamp, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
-// ====== SK Computer Firebase Configuration ======
+// Firebase web configuration is public client configuration, not a server credential.
 const firebaseConfig = {
-  apiKey: "AIzaSyCguRWlUD0XhbTT-t90qxmhVMKRe-j09b8",
-  authDomain: "sk-computer-53668.firebaseapp.com",
-  projectId: "sk-computer-53668",
-  storageBucket: "sk-computer-53668.firebasestorage.app",
-  messagingSenderId: "181873271339",
-  appId: "1:181873271339:web:b22202fac5706669e8406e",
-  measurementId: "G-SH186W2EVD"
+  apiKey: 'AIzaSyCguRWlUD0XhbTT-t90qxmhVMKRe-j09b8',
+  authDomain: 'sk-computer-53668.firebaseapp.com',
+  projectId: 'sk-computer-53668',
+  storageBucket: 'sk-computer-53668.firebasestorage.app',
+  messagingSenderId: '181873271339',
+  appId: '1:181873271339:web:b22202fac5706669e8406e',
+  measurementId: 'G-SH186W2EVD'
 };
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-const SHOP_NAME = "SK COMPUTER";
-const SHOP_TAGLINE = "आपले सरकार व डिजिटल सेवा केंद्र, एकनाथवाडी (पाथर्डी)";
-const SHOP_PHONE = "8888146077";
-const SHOP_UPI = "santoshkhedkar@ybl";
-
+const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), storage = getStorage(app);
 const $ = id => document.getElementById(id);
-
-let jobs = [];
-let unsubs = [];
-let confirmationResult = null;
-let currentAdminUser = null;
-
+const SHOP_PHONE = '8888146077';
 const SERVICES = [
-  { name: "पॅन कार्ड (Pan Card)", fee: 200, docs: "आधार कार्ड, पासपोर्ट साईज २ फोटो, सही" },
-  { name: "आधार दुरुस्ती / अपडेट (Aadhaar Update)", fee: 100, docs: "आधार कार्ड, पुरावा कागदपत्र (रेशन कार्ड/ओळखपत्र/पॅन)" },
-  { name: "मतदार ओळखपत्र (Voter Card)", fee: 100, docs: "आधार कार्ड, फोटो, वयाचा पुरावा (टी.सी.), पत्त्याचा पुरावा" },
-  { name: "ड्रायव्हिंग लायसन्स (Driving License)", fee: 350, docs: "आधार कार्ड, १० वी/१२ वी टीसी, ब्लड ग्रुप, फोटो, सही" },
-  { name: "उत्पन्न दाखला (Utpanna Dakhla)", fee: 150, docs: "रेशन कार्ड, तलाठी सहीचा अहवाल, आधार कार्ड, स्वयंघोषणापत्र" },
-  { name: "जात प्रमाणपत्र (Caste Certificate)", fee: 200, docs: "स्वतःची व वडिलांची शाळा सोडल्याचा दाखला, १९६७ पूर्वीचा पुरावा" },
-  { name: "७/१२ व ८-अ उतारा (7/12 & 8A Utara)", fee: 50, docs: "गट नंबर किंवा खाते नंबर माहिती" },
-  { name: "नवीन रेशन कार्ड / नाव वाढवणे (Ration Card)", fee: 150, docs: "सर्व सदस्यांचे आधार कार्ड, जन्माचा दाखला / लग्न पत्रिका, गॅस पासबुक" },
-  { name: "ऑनलाइन शासकीय अर्ज / फॉर्म (Online Application)", fee: 100, docs: "संबंधित योजनेची कागदपत्रे, आधार, मोबाईल नंबर" },
-  { name: "झेरॉक्स / प्रिंट / लॅमिनेशन / स्कॅन (Xerox & Print)", fee: 50, docs: "मूळ कागदपत्र" },
-  { name: "इतर ऑनलाइन सेवा (Other)", fee: 50, docs: "कामाचे स्वरूप व कागदपत्रे" }
+  ['पॅन कार्ड',200],['आधार दुरुस्ती / अपडेट',100],['मतदार ओळखपत्र',100],['ड्रायव्हिंग लायसन्स',350],
+  ['उत्पन्न दाखला',150],['जात प्रमाणपत्र',200],['७/१२ व ८-अ उतारा',50],['रेशन कार्ड',150],
+  ['ऑनलाइन शासकीय अर्ज / फॉर्म',100],['झेरॉक्स / प्रिंट / लॅमिनेशन / स्कॅन',50],['इतर ऑनलाइन सेवा',50]
 ];
+const statusMr = {Pending:'प्रलंबित',Processing:'प्रक्रियेत',Completed:'पूर्ण',Cancelled:'रद्द'};
+const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = value => '₹' + (Number(value) || 0).toFixed(2);
+const normPhone = value => String(value || '').replace(/\D/g,'');
+let jobs = [], unsub = null, confirmation = null, recaptcha = null, signedUser = null, isAdmin = false;
+$('service').innerHTML = SERVICES.map(([name,fee]) => `<option value="${esc(name)}" data-fee="${fee}">${esc(name)} — ₹${fee}</option>`).join('');
+$('service').addEventListener('change', () => $('totalAmount').value = $('service').selectedOptions[0]?.dataset.fee || 0);
+$('totalAmount').value = SERVICES[0][1];
 
-const stColor = {
-  Pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  Processing: "bg-blue-100 text-blue-800 border-blue-300",
-  Completed: "bg-green-100 text-green-800 border-green-300",
-  Cancelled: "bg-red-100 text-red-800 border-red-300"
-};
-
-const stMr = {
-  Pending: "प्रलंबित",
-  Processing: "प्रक्रियेत",
-  Completed: "पूर्ण",
-  Cancelled: "रद्द"
-};
-
-const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const money = n => "₹" + (parseFloat(n) || 0).toFixed(2);
-
-// Populate service selectors
-const svcOpts = SERVICES.map(s => `<option value="${s.name}" data-fee="${s.fee}">${s.name} - ₹${s.fee}</option>`).join("");
-$("jService").innerHTML = svcOpts;
-$("jService").onchange = () => {
-  const opt = $("jService").selectedOptions[0];
-  if (opt && opt.dataset.fee) $("jAmount").value = opt.dataset.fee;
-};
-$("jAmount").value = SERVICES[0].fee;
-
-// Populate services list accordion
-$("servicesAccordion").innerHTML = SERVICES.map(s => `
-  <details class="bg-slate-50 border rounded-lg p-2.5">
-    <summary class="font-semibold text-slate-800 cursor-pointer flex justify-between">
-      <span>${esc(s.name)}</span>
-      <span class="text-blue-600 font-bold">₹${s.fee}</span>
-    </summary>
-    <div class="mt-2 text-xs text-slate-600 pt-1 border-t">
-      <b>लागणारी कागदपत्रे:</b> ${esc(s.docs)}
-    </div>
-  </details>
-`).join("");
-
-// Numeric input cleaners
-$("jMobile").oninput = e => e.target.value = e.target.value.replace(/\D/g, "");
-$("custPhoneInput").oninput = e => e.target.value = e.target.value.replace(/\D/g, "");
-$("otpCodeInput").oninput = e => e.target.value = e.target.value.replace(/\D/g, "");
-$("trackPhoneInput").oninput = e => e.target.value = e.target.value.replace(/\D/g, "");
-
-// Top Navigation Switcher
-function switchSection(sec) {
-  $("sectionAdmin").classList.toggle("hidden", sec !== "admin");
-  $("sectionCust").classList.toggle("hidden", sec !== "cust");
-  $("sectionTrack").classList.toggle("hidden", sec !== "track");
-
-  $("navAdminBtn").classList.toggle("bg-blue-600", sec === "admin");
-  $("navCustBtn").classList.toggle("bg-blue-600", sec === "cust");
-  $("navTrackBtn").classList.toggle("bg-blue-600", sec === "track");
+function show(section) {
+  ['adminLogin','customerLogin','trackSection','adminApp','customerApp'].forEach(id => $(id).classList.toggle('hidden', id !== section));
 }
-
-$("navAdminBtn").onclick = () => switchSection("admin");
-$("navCustBtn").onclick = () => switchSection("cust");
-$("navTrackBtn").onclick = () => switchSection("track");
-
-// ----------------- ADMIN LOGIC -----------------
-$("adminLoginForm").onsubmit = async e => {
-  e.preventDefault();
-  $("adminLoginErr").textContent = "";
-  $("adminLoginSubmit").disabled = true;
-  $("adminLoginSubmit").textContent = "पडताळणी चालू आहे...";
-  try {
-    await signInWithEmailAndPassword(auth, $("adminEmail").value.trim(), $("adminPassword").value);
-  } catch (err) {
-    $("adminLoginErr").textContent = "ईमेल किंवा पासवर्ड चुकीचा आहे.";
-  } finally {
-    $("adminLoginSubmit").disabled = false;
-    $("adminLoginSubmit").textContent = "लॉगिन करा";
-  }
-};
-
-$("adminLogoutBtn").onclick = () => signOut(auth);
-
-// Admin Tabs Navigation
-function showAdminTab(t) {
-  ["dash", "jobs", "cust", "cash"].forEach(x => $("tab-" + x).classList.toggle("hidden", x !== t));
-  document.querySelectorAll(".admin-tab").forEach(b => {
-    const on = b.dataset.tab === t;
-    b.classList.toggle("border-blue-600", on);
-    b.classList.toggle("text-blue-700", on);
-    b.classList.toggle("text-slate-500", !on);
-  });
-  if (t === "cash") renderCashbook();
-}
-document.querySelectorAll(".admin-tab").forEach(b => b.onclick = () => showAdminTab(b.dataset.tab));
-
-// ----------------- CUSTOMER OTP LOGIC -----------------
-function initRecaptcha() {
-  if (!window.recaptchaVerifier) {
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-      size: "invisible",
-      callback: () => {}
-    });
-  }
-}
-
-$("sendOtpBtn").onclick = async () => {
-  const phone = $("custPhoneInput").value.trim();
-  const msgEl = $("custAuthMsg");
-  msgEl.textContent = "";
-
-  if (phone.length !== 10) {
-    msgEl.className = "text-xs text-center font-medium text-red-600";
-    msgEl.textContent = "कृपया योग्य १० अंकी मोबाईल नंबर टाका.";
-    return;
-  }
-
-  $("sendOtpBtn").disabled = true;
-  $("sendOtpBtn").textContent = "OTP पाठवला जात आहे...";
-
-  try {
-    initRecaptcha();
-    confirmationResult = await signInWithPhoneNumber(auth, "+91" + phone, window.recaptchaVerifier);
-    $("phoneStep").classList.add("hidden");
-    $("otpStep").classList.remove("hidden");
-    msgEl.className = "text-xs text-center font-medium text-green-600";
-    msgEl.textContent = `${phone} या नंबरवर OTP पाठवला आहे.`;
-  } catch (err) {
-    msgEl.className = "text-xs text-center font-medium text-red-600";
-    msgEl.textContent = "OTP पाठवण्यात त्रुटी आली. कृपया पुन्हा प्रयत्न करा.";
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = null;
-    }
-  } finally {
-    $("sendOtpBtn").disabled = false;
-    $("sendOtpBtn").textContent = "OTP पाठवा";
-  }
-};
-
-$("verifyOtpBtn").onclick = async () => {
-  const code = $("otpCodeInput").value.trim();
-  const msgEl = $("custAuthMsg");
-  if (code.length !== 6) {
-    msgEl.className = "text-xs text-center font-medium text-red-600";
-    msgEl.textContent = "६ अंकी अचूक OTP प्रविष्ट करा.";
-    return;
-  }
-
-  $("verifyOtpBtn").disabled = true;
-  $("verifyOtpBtn").textContent = "पडताळणी चालू आहे...";
-
-  try {
-    await confirmationResult.confirm(code);
-    msgEl.textContent = "";
-  } catch (err) {
-    msgEl.className = "text-xs text-center font-medium text-red-600";
-    msgEl.textContent = "चुकीचा OTP! कृपया पुन्हा तपासा.";
-  } finally {
-    $("verifyOtpBtn").disabled = false;
-    $("verifyOtpBtn").textContent = "पडताळणी करा आणि लॉगिन व्हा";
-  }
-};
-
-$("changeNumBtn").onclick = () => {
-  $("otpStep").classList.add("hidden");
-  $("phoneStep").classList.remove("hidden");
-  $("otpCodeInput").value = "";
-  $("custAuthMsg").textContent = "";
-};
-
-$("custLogoutBtn").onclick = () => signOut(auth);
-
-// ----------------- GLOBAL AUTH STATE HANDLER -----------------
+$('navAdmin').onclick = () => show(signedUser ? (isAdmin ? 'adminApp' : 'adminLogin') : 'adminLogin');
+$('navCustomer').onclick = () => show(signedUser?.phoneNumber ? 'customerApp' : 'customerLogin');
+$('navTrack').onclick = () => show('trackSection');
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('loginMsg').textContent = '';
+  try { await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value); }
+  catch (err) { $('loginMsg').textContent = 'लॉगिन अयशस्वी. ईमेल/पासवर्ड तपासा.'; console.error(err); }
+});
+$('logout').onclick = $('customerLogout').onclick = () => signOut(auth);
+function stopListener() { if (unsub) unsub(); unsub = null; jobs = []; }
 onAuthStateChanged(auth, async user => {
-  unsubs.forEach(u => u());
-  unsubs = [];
-
-  if (!user) {
-    currentAdminUser = null;
-    $("adminApp").classList.add("hidden");
-    $("adminLoginBox").classList.remove("hidden");
-
-    $("custDashboard").classList.add("hidden");
-    $("custLoginBox").classList.remove("hidden");
-    $("phoneStep").classList.remove("hidden");
-    $("otpStep").classList.add("hidden");
-    return;
-  }
-
-  // Case 1: Phone Login (Customer)
+  stopListener(); signedUser = user; isAdmin = false;
+  $('adminApp').classList.add('hidden'); $('customerApp').classList.add('hidden');
+  if (!user) { show('adminLogin'); return; }
   if (user.phoneNumber) {
-    switchSection("cust");
-    $("custLoginBox").classList.add("hidden");
-    $("custDashboard").classList.remove("hidden");
-
-    const pureNumber = user.phoneNumber.replace("+91", "").trim();
-    $("custUserBadge").textContent = pureNumber;
-    fetchCustomerJobs(pureNumber);
+    show('customerApp');
+    const phoneNumber = normPhone(user.phoneNumber.replace(/^\+91/,''));
+    unsub = onSnapshot(query(collection(db,'jobs'), where('custPhone','==',phoneNumber)), snap => {
+      jobs = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+      renderCustomerJobs();
+    }, err => { $('customerJobs').textContent = 'कामे लोड झाली नाहीत. परवानगी/नेटवर्क तपासा.'; console.error(err); });
     return;
   }
-
-  // Case 2: Email Login (Admin)
-  const adm = await getDoc(doc(db, "admins", user.uid)).catch(() => null);
-  if (!adm || !adm.exists()) {
-    $("adminLoginErr").textContent = "हा ईमेल ॲडमिन म्हणून अधिकृत नाही. UID: " + user.uid;
-    await signOut(auth);
-    return;
-  }
-
-  currentAdminUser = user;
-  switchSection("admin");
-  $("adminLoginBox").classList.add("hidden");
-  $("adminApp").classList.remove("hidden");
-
-  // Admin Real-time Listener for all jobs
-  unsubs.push(onSnapshot(query(collection(db, "jobs"), orderBy("createdAt", "desc")), s => {
-    jobs = s.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderAllAdmin();
-  }, err => console.error("Jobs error:", err)));
-
-  showAdminTab("dash");
+  try {
+    const adminDoc = await getDoc(doc(db,'admins',user.uid));
+    if (!adminDoc.exists()) { $('loginMsg').textContent = 'हा account ॲडमिन म्हणून अधिकृत नाही.'; await signOut(auth); return; }
+    isAdmin = true; show('adminApp'); $('cashDate').value = new Date().toLocaleDateString('en-CA');
+    unsub = onSnapshot(query(collection(db,'jobs'), orderBy('createdAt','desc')), snap => {
+      jobs = snap.docs.map(d => ({id:d.id,...d.data()})); renderAdmin();
+    }, err => { $('jobsList').textContent = 'कामे लोड झाली नाहीत. Firestore rules तपासा.'; console.error(err); });
+  } catch (err) { $('loginMsg').textContent = 'Admin पडताळणी अयशस्वी. Firebase rules तपासा.'; console.error(err); await signOut(auth); }
 });
 
-// ----------------- ADMIN DASHBOARD & JOBS -----------------
-function renderAllAdmin() {
-  renderStats();
-  renderJobs();
-  renderCust();
+function setupRecaptcha() {
+  if (!recaptcha) recaptcha = new RecaptchaVerifier(auth,'recaptcha-container',{size:'invisible'});
+  return recaptcha;
+}
+$('phone').addEventListener('input', e => e.target.value = normPhone(e.target.value).slice(0,10));
+$('otp').addEventListener('input', e => e.target.value = normPhone(e.target.value).slice(0,6));
+$('sendOtp').onclick = async () => {
+  const phone = $('phone').value.trim();
+  if (!/^\d{10}$/.test(phone)) { $('customerMsg').textContent = '१० अंकी वैध मोबाईल नंबर टाका.'; return; }
+  $('sendOtp').disabled = true;
+  try { confirmation = await signInWithPhoneNumber(auth,'+91'+phone,setupRecaptcha()); $('phoneStep').classList.add('hidden'); $('codeStep').classList.remove('hidden'); $('customerMsg').textContent = 'OTP पाठवला आहे.'; }
+  catch (err) { $('customerMsg').textContent = 'OTP पाठवता आला नाही. reCAPTCHA/Phone Auth सेटिंग तपासा.'; console.error(err); if (recaptcha) { recaptcha.clear(); recaptcha = null; } }
+  finally { $('sendOtp').disabled = false; }
+};
+$('verifyOtp').onclick = async () => {
+  if (!confirmation || !/^\d{6}$/.test($('otp').value)) { $('customerMsg').textContent = '६ अंकी OTP टाका.'; return; }
+  try { await confirmation.confirm($('otp').value); $('customerMsg').textContent = ''; }
+  catch (err) { $('customerMsg').textContent = 'OTP चुकीचा किंवा कालबाह्य आहे.'; console.error(err); }
+};
+$('changePhone').onclick = () => { confirmation = null; $('otp').value=''; $('codeStep').classList.add('hidden'); $('phoneStep').classList.remove('hidden'); };
+
+$('newJob').onclick = () => { $('jobFormWrap').classList.remove('hidden'); $('jobMsg').textContent=''; };
+$('cancelJob').onclick = () => { $('jobFormWrap').classList.add('hidden'); $('jobForm').reset(); $('totalAmount').value=SERVICES[0][1]; };
+$('jobPhone').addEventListener('input',e=>e.target.value=normPhone(e.target.value).slice(0,10));
+$('jobForm').addEventListener('submit', async e => {
+  e.preventDefault(); if (!isAdmin) return;
+  const name=$('jobName').value.trim(), phone=$('jobPhone').value.trim(), total=Number($('totalAmount').value), paid=Number($('initialPaid').value||0), file=$('jobFile').files[0];
+  if (!name || !/^\d{10}$/.test(phone)) { $('jobMsg').textContent='नाव आणि वैध १० अंकी नंबर आवश्यक आहे.'; return; }
+  if (!Number.isFinite(total)||!Number.isFinite(paid)||total<0||paid<0||paid>total) { $('jobMsg').textContent='रक्कम योग्य असावी आणि जमा रक्कम एकूण फीपेक्षा जास्त नसावी.'; return; }
+  if (file && (file.size>5*1024*1024 || !(file.type.startsWith('image/')||file.type==='application/pdf'))) { $('jobMsg').textContent='फक्त फोटो/PDF फाइल, कमाल ५ MB.'; return; }
+  const btn=$('saveJob'); btn.disabled=true; $('jobMsg').textContent='सेव्ह करत आहे...';
+  try {
+    let documentUrl='';
+    if(file) { const safe=file.name.replace(/[^\w.-]/g,'_').slice(-100), storageRef=ref(storage,`jobs/${phone}/${Date.now()}_${safe}`); await uploadBytes(storageRef,file,{contentType:file.type}); documentUrl=await getDownloadURL(storageRef); }
+    const year=new Date().getFullYear(), counterRef=doc(db,'counters',`jobs-${year}`), jobRef=doc(collection(db,'jobs'));
+    let jobNumber='', trackKey='';
+    await runTransaction(db,async tx=>{
+      const counter=await tx.get(counterRef), next=(counter.exists()?Number(counter.data().value||0):0)+1;
+      jobNumber=`SK-${year}-${String(next).padStart(4,'0')}`; trackKey=`${jobNumber}-${phone.slice(-4)}`;
+      tx.set(counterRef,{value:next});
+      const now=serverTimestamp(), payments=paid>0?[{amt:paid,date:new Date().toISOString(),mode:'Cash'}]:[];
+      tx.set(jobRef,{jobNumber,trackKey,custName:name,custPhone:phone,custEmail:'',ownerUid:'',service:$('service').value,details:$('details').value.trim(),documentUrl,status:'Pending',totalAmount:total,paidAmount:paid,paymentStatus:paid>=total&&total>0?'Paid':paid>0?'Partial':'Unpaid',payments,adminNotes:'',createdAt:now,updatedAt:now});
+      tx.set(doc(db,'publicJobs',trackKey),{jobNumber,title:$('service').value,status:'Pending',totalAmount:total,paidAmount:paid,balance:total-paid,createdAt:now,updatedAt:now});
+    });
+    $('jobForm').reset(); $('totalAmount').value=SERVICES[0][1]; $('jobFormWrap').classList.add('hidden'); alert(`काम सेव्ह झाले. Job No: ${jobNumber}`);
+  } catch(err) { $('jobMsg').textContent='सेव्ह अयशस्वी: '+(err.message||'Firebase नियम तपासा'); console.error(err); }
+  finally { btn.disabled=false; }
+});
+
+async function addPayment(id) {
+  const job=jobs.find(j=>j.id===id); if(!job || !isAdmin) return;
+  const raw=prompt('मिळालेली रक्कम (₹):'); if(raw===null||raw.trim()==='') return;
+  const amount=Number(raw), due=Number(job.totalAmount)-Number(job.paidAmount);
+  if(!Number.isFinite(amount)||amount<=0||amount>due) { alert(`रक्कम 0 पेक्षा जास्त आणि बाकी रकमेपेक्षा (${money(Math.max(due,0))}) जास्त नसावी.`); return; }
+  const mode=prompt('पेमेंट पद्धत (Cash / UPI / Bank):','Cash')||'Cash', jobRef=doc(db,'jobs',id), pubRef=job.trackKey?doc(db,'publicJobs',job.trackKey):null;
+  try {
+    await runTransaction(db,async tx=>{
+      const snap=await tx.get(jobRef); if(!snap.exists()) throw new Error('काम सापडले नाही.');
+      const data=snap.data(), oldPaid=Number(data.paidAmount)||0, total=Number(data.totalAmount)||0, newPaid=oldPaid+amount;
+      if(amount>total-oldPaid) throw new Error('ही रक्कम बाकीपेक्षा जास्त आहे. पेज refresh करून पुन्हा प्रयत्न करा.');
+      let pubSnap=null; if(pubRef) pubSnap=await tx.get(pubRef);
+      const payments=[...(data.payments||[]),{amt:amount,date:new Date().toISOString(),mode}];
+      tx.update(jobRef,{paidAmount:newPaid,paymentStatus:newPaid>=total&&total>0?'Paid':'Partial',payments,updatedAt:serverTimestamp()});
+      if(pubRef&&pubSnap?.exists()) tx.update(pubRef,{paidAmount:newPaid,balance:total-newPaid,updatedAt:serverTimestamp()});
+    });
+  } catch(err) { alert('पेमेंट सेव्ह झाले नाही: '+err.message); console.error(err); }
+}
+async function changeStatus(id,status) {
+  const j=jobs.find(x=>x.id===id); if(!j||!isAdmin) return;
+  const jobRef=doc(db,'jobs',id), pubRef=j.trackKey?doc(db,'publicJobs',j.trackKey):null;
+  try { await runTransaction(db,async tx=>{ const snap=await tx.get(jobRef); if(!snap.exists()) throw new Error('काम सापडले नाही'); let pub=null; if(pubRef) pub=await tx.get(pubRef); tx.update(jobRef,{status,updatedAt:serverTimestamp()}); if(pubRef&&pub?.exists()) tx.update(pubRef,{status,updatedAt:serverTimestamp()}); }); }
+  catch(err) { alert('स्थिती बदलता आली नाही: '+err.message); console.error(err); }
+}
+function renderAdmin() {
+  $('countAll').textContent=jobs.length;
+  for(const s of ['Pending','Processing','Completed']) $('count'+s).textContent=jobs.filter(j=>(j.status||'Pending')===s).length;
+  const term=$('searchJobs').value.trim().toLowerCase();
+  const list=jobs.filter(j=>`${j.custName||''} ${j.custPhone||''} ${j.jobNumber||''} ${j.service||''}`.toLowerCase().includes(term));
+  $('jobsList').innerHTML=list.map(j=>{
+    const total=Number(j.totalAmount)||0,paid=Number(j.paidAmount)||0,due=Math.max(total-paid,0);
+    return `<article class="space-y-2 rounded-xl border bg-white p-4 shadow"><div class="flex flex-wrap justify-between gap-2"><div><b>${esc(j.custName)}</b> · ${esc(j.custPhone)}<div class="text-sm">${esc(j.jobNumber||'')} · ${esc(j.service||'')}</div></div><b>${esc(statusMr[j.status]||j.status||'')}</b></div><div>एकूण ${money(total)} · जमा ${money(paid)} · बाकी <b>${money(due)}</b></div>${j.details?`<p class="text-sm">${esc(j.details)}</p>`:''}${j.documentUrl?`<a class="text-blue-700 underline" target="_blank" rel="noopener" href="${esc(j.documentUrl)}">कागदपत्र उघडा</a>`:''}<div class="flex flex-wrap gap-2"><select data-status="${esc(j.id)}" class="rounded border p-2">${['Pending','Processing','Completed','Cancelled'].map(s=>`<option value="${s}" ${s===(j.status||'Pending')?'selected':''}>${statusMr[s]}</option>`).join('')}</select><button data-pay="${esc(j.id)}" class="rounded bg-green-700 px-3 py-2 text-white">+ पेमेंट</button><button data-print="${esc(j.id)}" class="rounded bg-slate-700 px-3 py-2 text-white">पावती</button><a class="rounded bg-green-600 px-3 py-2 text-white" target="_blank" rel="noopener" href="https://wa.me/91${esc(j.custPhone)}?text=${encodeURIComponent(`नमस्कार ${j.custName}, Job No: ${j.jobNumber}, स्थिती: ${statusMr[j.status]||j.status}`)}">WhatsApp</a></div></article>`;
+  }).join('')||'<p class="rounded bg-white p-5 text-center">काम सापडले नाही.</p>';
+  document.querySelectorAll('[data-status]').forEach(el=>el.onchange=()=>changeStatus(el.dataset.status,el.value));
+  document.querySelectorAll('[data-pay]').forEach(el=>el.onclick=()=>addPayment(el.dataset.pay));
+  document.querySelectorAll('[data-print]').forEach(el=>el.onclick=()=>printReceipt(el.dataset.print));
   renderCashbook();
 }
-
-function renderStats() {
-  $("sTotal").textContent = jobs.length;
-  $("sPending").textContent = jobs.filter(j => (j.status || "Pending") === "Pending").length;
-  $("sProc").textContent = jobs.filter(j => j.status === "Processing").length;
-  $("sDone").textContent = jobs.filter(j => j.status === "Completed").length;
-  const amt = jobs.reduce((a, j) => a + (+j.totalAmount || 0), 0);
-  const paid = jobs.reduce((a, j) => a + (+j.paidAmount || 0), 0);
-  $("sAmt").textContent = money(amt);
-  $("sDue").textContent = money(Math.max(amt - paid, 0));
+$('searchJobs').oninput=renderAdmin;
+function renderCustomerJobs() {
+  $('customerJobs').innerHTML=jobs.map(j=>`<article class="rounded-xl border p-4"><b>${esc(j.jobNumber||'काम')} · ${esc(j.service||'')}</b><p>स्थिती: ${esc(statusMr[j.status]||j.status||'प्रलंबित')}</p><p>एकूण ${money(j.totalAmount)} · जमा ${money(j.paidAmount)} · बाकी ${money(Math.max((Number(j.totalAmount)||0)-(Number(j.paidAmount)||0),0))}</p>${j.details?`<p>${esc(j.details)}</p>`:''}${j.documentUrl?`<a class="text-blue-700 underline" target="_blank" rel="noopener" href="${esc(j.documentUrl)}">कागदपत्र पाहा</a>`:''}</article>`).join('')||'<p>या नंबरवर काम नोंदलेले नाही.</p>';
 }
-
-function renderJobs() {
-  const q = $("jobSearch").value.trim().toLowerCase();
-  const f = $("jobFilter").value;
-  const list = jobs.filter(j => {
-    const text = `${j.custName || ""} ${j.custPhone || ""} ${j.jobNumber || ""} ${j.service || ""}`.toLowerCase();
-    return (!f || (j.status || "Pending") === f) && (!q || text.includes(q));
-  });
-
-  $("jobList").innerHTML = list.map(j => {
-    const tot = +j.totalAmount || 0, pd = +j.paidAmount || 0, due = Math.max(tot - pd, 0);
-    const jNo = j.jobNumber ? `<span class="bg-slate-100 text-slate-800 font-mono text-xs px-2 py-0.5 rounded border border-slate-300">${esc(j.jobNumber)}</span>` : "";
-    return `
-    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-2.5">
-      <div class="flex justify-between items-start gap-2">
-        <div>
-          <div class="font-bold text-base flex items-center gap-2 flex-wrap">
-            ${esc(j.custName || "नाव नाही")} ${jNo}
-          </div>
-          <div class="text-sm text-slate-500">${esc(j.custPhone || "-")} · <span class="text-slate-700 font-medium">${esc(j.service || "-")}</span></div>
-        </div>
-        <span class="text-xs px-2.5 py-1 rounded-full font-semibold border ${stColor[j.status] || "bg-yellow-100 text-yellow-800"}">
-          ${stMr[j.status] || j.status}
-        </span>
-      </div>
-      <div class="text-sm bg-slate-50 p-2.5 rounded-lg flex justify-between flex-wrap gap-2 border">
-        <div>एकूण फी: <b>${money(tot)}</b></div>
-        <div>जमा: <b class="text-green-600">${money(pd)}</b></div>
-        <div>बाकी: <b class="${due > 0 ? "text-red-600 font-bold" : "text-green-600"}">${money(due)}</b></div>
-      </div>
-      ${j.details ? `<div class="text-xs text-slate-600 bg-white border p-2 rounded"><b>टीप:</b> ${esc(j.details)}</div>` : ""}
-      ${j.documentUrl ? `<div class="text-xs"><a target="_blank" rel="noopener" href="${esc(j.documentUrl)}" class="inline-flex items-center gap-1 text-blue-600 font-medium hover:underline"><i class="fa-solid fa-file-pdf"></i> कागदपत्र पहा / डाउनलोड</a></div>` : ""}
-      <div class="flex flex-wrap gap-2 pt-2 border-t items-center justify-between">
-        <select data-status="${j.id}" class="border rounded-lg p-1.5 text-xs font-semibold bg-white cursor-pointer shadow-sm">
-          ${["Pending", "Processing", "Completed", "Cancelled"].map(s => `<option value="${s}" ${s === (j.status || "Pending") ? "selected" : ""}>${stMr[s]}</option>`).join("")}
-        </select>
-        <div class="flex gap-1.5 flex-wrap">
-          <button data-pay="${j.id}" class="border rounded-lg px-2.5 py-1 text-xs font-semibold bg-white hover:bg-slate-50 transition shadow-sm">+ पेमेंट</button>
-          <button data-print="${j.id}" class="border rounded-lg px-2.5 py-1 text-xs font-semibold bg-white hover:bg-slate-50 transition shadow-sm"><i class="fa-solid fa-print"></i> पावती</button>
-          <button data-wa="${j.id}" class="bg-green-600 text-white rounded-lg px-2.5 py-1 text-xs font-semibold hover:bg-green-700 transition shadow-sm flex items-center gap-1">
-            <i class="fa-brands fa-whatsapp"></i> WhatsApp
-          </button>
-        </div>
-      </div>
-    </div>`;
-  }).join("") || '<div class="text-center text-slate-500 py-10 bg-white rounded-xl border">कोणतेही काम सापडले नाही.</div>';
-
-  document.querySelectorAll("[data-status]").forEach(s => s.onchange = async () => {
-    const newStatus = s.value;
-    const jId = s.dataset.status;
-    const j = jobs.find(x => x.id === jId);
-    await updateDoc(doc(db, "jobs", jId), { status: newStatus, updatedAt: serverTimestamp() });
-    if (j && j.trackKey) {
-      await updateDoc(doc(db, "publicJobs", j.trackKey), { status: newStatus, updatedAt: serverTimestamp() }).catch(() => {});
-    }
-  });
-
-  document.querySelectorAll("[data-pay]").forEach(b => b.onclick = () => addPayment(b.dataset.pay));
-  document.querySelectorAll("[data-print]").forEach(b => b.onclick = () => printInvoice(b.dataset.print));
-  document.querySelectorAll("[data-wa]").forEach(b => b.onclick = () => sendWhatsApp(b.dataset.wa));
-}
-
-$("jobSearch").oninput = renderJobs;
-$("jobFilter").onchange = renderJobs;
-
-// Customer Aggregation
-function renderCust() {
-  const q = $("custSearch").value.trim().toLowerCase();
-  const map = new Map();
-  jobs.forEach(j => {
-    const p = j.custPhone || "इतर";
-    if (!map.has(p)) map.set(p, { name: j.custName || "नाव नाही", phone: p, total: 0, paid: 0, count: 0 });
-    const c = map.get(p);
-    c.total += (+j.totalAmount || 0);
-    c.paid += (+j.paidAmount || 0);
-    c.count += 1;
-  });
-  
-  const list = Array.from(map.values()).filter(c => !q || (c.name + c.phone).toLowerCase().includes(q));
-  $("custList").innerHTML = list.map(c => {
-    const due = Math.max(c.total - c.paid, 0);
-    return `
-    <div class="bg-white rounded-xl p-3.5 shadow-sm border border-slate-200 flex justify-between items-center">
-      <div>
-        <div class="font-bold text-slate-800">${esc(c.name)}</div>
-        <div class="text-xs text-slate-500 font-mono mt-0.5">${esc(c.phone)} · <b>${c.count}</b> कामे</div>
-      </div>
-      <div class="text-right">
-        <div class="text-xs text-slate-500">एकूण फी: ${money(c.total)}</div>
-        <div class="text-sm font-bold ${due > 0 ? "text-red-600" : "text-green-600"}">बाकी: ${money(due)}</div>
-      </div>
-    </div>`;
-  }).join("") || '<div class="text-center text-slate-500 py-8 bg-white rounded-xl border">ग्राहक सापडले नाहीत.</div>';
-}
-$("custSearch").oninput = renderCust;
-
-// Daily Cashbook Calculation
-$("cashbookDate").value = new Date().toISOString().slice(0, 10);
-$("refreshCashbook").onclick = renderCashbook;
-$("cashbookDate").onchange = renderCashbook;
-
 function renderCashbook() {
-  const selDate = $("cashbookDate").value || new Date().toISOString().slice(0, 10);
-  let totalCash = 0, totalUpi = 0, other = 0;
-  const dayRows = [];
-
-  jobs.forEach(j => {
-    (j.payments || []).forEach(p => {
-      const pDate = (p.date || "").slice(0, 10);
-      if (pDate === selDate) {
-        const amt = +p.amt || 0;
-        if (p.mode === "UPI") totalUpi += amt;
-        else if (p.mode === "Cash" || p.mode === "रोख") totalCash += amt;
-        else other += amt;
-        dayRows.push({ ...p, job: j });
-      }
-    });
-  });
-
-  const totalAll = totalCash + totalUpi + other;
-
-  $("cashbookSummary").innerHTML = `
-    <div class="bg-white p-3 rounded-xl border text-center"><div class="text-xs text-slate-500">💵 रोख (Cash)</div><div class="font-bold text-base text-slate-800 mt-0.5">${money(totalCash)}</div></div>
-    <div class="bg-white p-3 rounded-xl border text-center"><div class="text-xs text-slate-500">📲 UPI जमा</div><div class="font-bold text-base text-blue-700 mt-0.5">${money(totalUpi)}</div></div>
-    <div class="bg-white p-3 rounded-xl border text-center"><div class="text-xs text-slate-500">इतर (Bank)</div><div class="font-bold text-base text-slate-800 mt-0.5">${money(other)}</div></div>
-    <div class="bg-green-50 p-3 rounded-xl border border-green-200 text-center"><div class="text-xs text-green-800 font-bold">एकूण गल्ला</div><div class="font-bold text-lg text-green-900 mt-0.5">${money(totalAll)}</div></div>
-  `;
-
-  if (!dayRows.length) {
-    $("cashbookList").innerHTML = `<div class="p-4 bg-white rounded-xl border text-center text-slate-500 text-xs">या तारखेला कोणतीही जमा रक्कम नोंदवलेली नाही.</div>`;
-    return;
-  }
-
-  $("cashbookList").innerHTML = dayRows.map(r => `
-    <div class="bg-white p-3 rounded-lg border flex justify-between items-center text-xs">
-      <div>
-        <span class="font-bold text-slate-800">${esc(r.job.custName || "ग्राहक")}</span> (${esc(r.job.service || "-")})
-        <span class="ml-2 bg-slate-100 font-mono text-[11px] px-1.5 py-0.5 rounded border">${esc(r.job.jobNumber || "-")}</span>
-      </div>
-      <div class="text-right">
-        <span class="font-bold text-green-700 text-sm">${money(r.amt)}</span>
-        <span class="ml-1 text-slate-500">(${esc(r.mode)})</span>
-      </div>
-    </div>
-  `).join("");
+  if(!$('cashDate').value) return;
+  const day=$('cashDate').value, sums={Cash:0,UPI:0,Bank:0};
+  jobs.forEach(j=>(j.payments||[]).forEach(p=>{ if(String(p.date||'').slice(0,10)===day){const key=p.mode==='UPI'?'UPI':(['Cash','रोख'].includes(p.mode)?'Cash':'Bank');sums[key]+=Number(p.amt)||0;} }));
+  $('cashSummary').innerHTML=`रोख: <b>${money(sums.Cash)}</b> · UPI: <b>${money(sums.UPI)}</b> · इतर: <b>${money(sums.Bank)}</b> · एकूण: <b>${money(sums.Cash+sums.UPI+sums.Bank)}</b>`;
 }
-
-// ----------------- JOB CREATION FLOW -----------------
-const openNewJobModal = () => $("jobModal").classList.remove("hidden");
-$("newJobBtn").onclick = openNewJobModal;
-$("dashNewJobBtn").onclick = openNewJobModal;
-$("jCancel").onclick = () => $("jobModal").classList.add("hidden");
-$("jCloseX").onclick = () => $("jobModal").classList.add("hidden");
-
-$("jobForm").onsubmit = async e => {
-  e.preventDefault();
-  const saveBtn = $("jSave");
-  saveBtn.disabled = true;
-  saveBtn.textContent = "सेव्ह होत आहे...";
-
-  try {
-    const custPhone = $("jMobile").value.trim();
-    const custName = $("jName").value.trim();
-    const service = $("jService").value;
-    const totalAmount = +$("jAmount").value || 0;
-    const paidAmount = +$("jPaid").value || 0;
-    const details = $("jNotes").value.trim();
-    const file = $("jFile").files[0];
-    let documentUrl = "";
-
-    if (file) {
-      const cleanFileName = file.name.replace(/[^\w.-]/g, "_");
-      const r = ref(storage, `jobs/${custPhone}/${Date.now()}_${cleanFileName}`);
-      await uploadBytes(r, file);
-      documentUrl = await getDownloadURL(r);
-    }
-
-    const year = new Date().getFullYear();
-    const counterRef = doc(db, "counters", `jobs-${year}`);
-    const jobRef = doc(collection(db, "jobs"));
-
-    let jobNumber = "", trackKey = "";
-    await runTransaction(db, async tx => {
-      const cs = await tx.get(counterRef);
-      const next = (cs.exists() ? Number(cs.data().value || 0) : 0) + 1;
-      jobNumber = `SK-${year}-${String(next).padStart(4, "0")}`;
-      trackKey = `${jobNumber}-${custPhone.slice(-4)}`;
-      tx.set(counterRef, { value: next });
-
-      const jobData = {
-        jobNumber, trackKey,
-        custName, custPhone, custEmail: "", ownerUid: "",
-        service, details, documentUrl,
-        status: "Pending",
-        totalAmount, paidAmount,
-        paymentStatus: totalAmount > 0 && paidAmount >= totalAmount ? "Paid" : paidAmount > 0 ? "Partial" : "Unpaid",
-        payments: paidAmount > 0 ? [{ amt: paidAmount, date: new Date().toISOString(), mode: "Cash" }] : [],
-        adminNotes: details,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      };
-
-      tx.set(jobRef, jobData);
-      tx.set(doc(db, "publicJobs", trackKey), {
-        jobNumber, title: service, status: "Pending",
-        totalAmount, paidAmount, balance: Math.max(totalAmount - paidAmount, 0),
-        createdAt: serverTimestamp(), updatedAt: serverTimestamp()
-      });
-    });
-
-    $("jobForm").reset();
-    $("jobModal").classList.add("hidden");
-    alert(`काम यशस्वीरीत्या सेव्ह झाले!\nजॉब क्रमांक: ${jobNumber}\nट्रॅकिंग कोड: ${trackKey}`);
-  } catch (err) {
-    alert("त्रुटी: " + err.message);
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = "सेव्ह करा";
-  }
+$('cashDate').onchange=renderCashbook;
+function printReceipt(id) {
+  const j=jobs.find(x=>x.id===id); if(!j)return;
+  $('receipt').innerHTML=`<div style="max-width:620px;margin:auto;border:2px solid #222;padding:24px;font-family:Arial,sans-serif"><h1 style="text-align:center">SK COMPUTER</h1><p style="text-align:center">आपले सरकार व डिजिटल सेवा केंद्र, एकनाथवाडी (पाथर्डी)<br>मोबाईल: ${SHOP_PHONE}</p><hr><p>Job No: ${esc(j.jobNumber||'-')}</p><p>ग्राहक: ${esc(j.custName)} (${esc(j.custPhone)})</p><p>सेवा: ${esc(j.service)}</p><p>स्थिती: ${esc(statusMr[j.status]||j.status||'')}</p><hr><p>एकूण फी: ${money(j.totalAmount)}</p><p>जमा: ${money(j.paidAmount)}</p><b>बाकी: ${money(Math.max((Number(j.totalAmount)||0)-(Number(j.paidAmount)||0),0))}</b></div>`;
+  $('receipt').classList.remove('hidden'); window.print(); setTimeout(()=>$('receipt').classList.add('hidden'),1000);
+}
+$('exportCsv').onclick=()=>{
+  const quote=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  const rows=[['Job No','Customer','Phone','Service','Status','Total','Paid','Balance'],...jobs.map(j=>[j.jobNumber,j.custName,j.custPhone,j.service,j.status,j.totalAmount,j.paidAmount,Math.max((Number(j.totalAmount)||0)-(Number(j.paidAmount)||0),0)])];
+  const blob=new Blob(['\ufeff'+rows.map(r=>r.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='SK_Computer_Jobs.csv';a.click();URL.revokeObjectURL(url);
 };
-
-// ----------------- ADD PAYMENT FLOW -----------------
-async function addPayment(id) {
-  const j = jobs.find(x => x.id === id);
-  if (!j) return;
-  const v = prompt("मिळालेली रक्कम (₹):");
-  const amt = parseFloat(v);
-  if (!v || isNaN(amt) || amt <= 0) return;
-
-  const mode = prompt("पेमेंट पद्धत निवडा (Cash / UPI / Bank):", "Cash") || "Cash";
-  const newPaid = (+j.paidAmount || 0) + amt;
-  const tot = +j.totalAmount || 0;
-  const ps = tot > 0 && newPaid >= tot ? "Paid" : newPaid > 0 ? "Partial" : "Unpaid";
-  const pays = [...(j.payments || []), { amt, date: new Date().toISOString(), mode }];
-
-  await updateDoc(doc(db, "jobs", id), {
-    paidAmount: newPaid, paymentStatus: ps, payments: pays, updatedAt: serverTimestamp()
-  });
-
-  if (j.trackKey) {
-    await updateDoc(doc(db, "publicJobs", j.trackKey), {
-      paidAmount: newPaid, balance: Math.max(tot - newPaid, 0), updatedAt: serverTimestamp()
-    }).catch(() => {});
-  }
+$('trackLast4').addEventListener('input',e=>e.target.value=normPhone(e.target.value).slice(0,4));
+async function track() {
+  const no=$('trackJob').value.trim().toUpperCase(),last4=$('trackLast4').value.trim();
+  if(!/^SK-\d{4}-\d{4}$/.test(no)||!/^\d{4}$/.test(last4)){ $('trackResult').textContent='योग्य Job No. आणि ४ अंक टाका.';return; }
+  $('trackResult').textContent='शोधत आहे...';
+  try { const snap=await getDoc(doc(db,'publicJobs',`${no}-${last4}`)); if(!snap.exists()){ $('trackResult').textContent='काम सापडले नाही. तपशील पुन्हा तपासा.';return; } const d=snap.data(); $('trackResult').innerHTML=`<div class="rounded border bg-slate-50 p-3"><b>${esc(d.title||'सेवा')}</b> · ${esc(statusMr[d.status]||d.status)}<p>Job No: ${esc(d.jobNumber)}</p><p>एकूण: ${money(d.totalAmount)} · जमा: ${money(d.paidAmount)} · बाकी: ${money(d.balance)}</p></div>`; }
+  catch(err){ $('trackResult').textContent='Tracking माहिती मिळाली नाही. Firebase rules तपासा.'; console.error(err); }
 }
-
-// ----------------- WHATSAPP NOTIFICATION -----------------
-function sendWhatsApp(id) {
-  const j = jobs.find(x => x.id === id);
-  if (!j || !j.custPhone) return;
-  const tot = +j.totalAmount || 0, pd = +j.paidAmount || 0, due = Math.max(tot - pd, 0);
-  const trackUrl = `${window.location.origin}${window.location.pathname}?job=${encodeURIComponent(j.jobNumber || "")}&p=${j.custPhone.slice(-4)}`;
-  const msg = `*SK COMPUTER SEVA UPDATE*
-
-नमस्कार *${j.custName || "ग्राहक"}*,
-तुमचे काम: *${j.service || "-"}*
-स्थिती: *${stMr[j.status] || j.status}*
-जॉब क्र.: ${j.jobNumber || "-"}
-एकूण फी: ₹${tot}
-जमा रक्कम: ₹${pd}
-*बाकी रक्कम: ₹${due}*
-
-कामाची थेट स्थिती तपासण्यासाठी लिंक:
-${trackUrl}
-
-धन्यवाद!
-SK Computer, एकनाथवाडी (पाथर्डी)`;
-  window.open(`https://wa.me/91${j.custPhone}?text=${encodeURIComponent(msg)}`, "_blank");
-}
-
-// ----------------- PRINT INVOICE -----------------
-function printInvoice(id) {
-  const j = jobs.find(x => x.id === id);
-  if (!j) return;
-  const tot = +j.totalAmount || 0, pd = +j.paidAmount || 0, due = Math.max(tot - pd, 0);
-  const d = j.createdAt?.toDate ? j.createdAt.toDate() : new Date();
-
-  $("printArea").innerHTML = `
-    <div style="font-family:system-ui,-apple-system,sans-serif;max-width:620px;margin:auto;border:2px solid #222;padding:24px;background:#fff;border-radius:12px">
-      <div style="text-align:center;border-bottom:2px solid #222;padding-bottom:12px;margin-bottom:12px">
-        <h1 style="margin:0;font-size:24px;font-weight:900;color:#1e3a8a">${SHOP_NAME}</h1>
-        <p style="margin:3px 0;font-size:13px;font-weight:bold">${SHOP_TAGLINE}</p>
-        <p style="margin:2px 0;font-size:12px">मोबाईल: ${SHOP_PHONE} | UPI: ${SHOP_UPI}</p>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
-        <span><b>जॉब क्र.:</b> ${esc(j.jobNumber || "-")}</span>
-        <span><b>दिनांक:</b> ${d.toLocaleDateString("mr-IN")}</span>
-      </div>
-      <div style="font-size:14px;line-height:1.6;margin-bottom:12px">
-        <div><b>ग्राहक नाव:</b> ${esc(j.custName || "-")} (${esc(j.custPhone || "-")})</div>
-        <div><b>सेवा प्रकार:</b> ${esc(j.service || "-")}</div>
-        <div><b>सद्यस्थिती:</b> ${stMr[j.status] || j.status}</div>
-      </div>
-      <table class="receipt-table" style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px">
-        <tr><td>एकूण फी</td><td align="right">₹${tot.toFixed(2)}</td></tr>
-        <tr><td>जमा रक्कम</td><td align="right" style="color:green;font-weight:bold">₹${pd.toFixed(2)}</td></tr>
-        <tr style="background:#f8f9fa"><td><b>बाकी रक्कम (उधारी)</b></td><td align="right"><b style="color:red">₹${due.toFixed(2)}</b></td></tr>
-      </table>
-      <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:12px">
-        <span>ग्राहकाची स्वाक्षरी</span>
-        <span>${SHOP_NAME} (अधिकृत स्वाक्षरी / शिक्का)</span>
-      </div>
-      <p style="text-align:center;font-size:11px;margin-top:20px;color:#666">आमच्या सेवेची निवड केल्याबद्दल धन्यवाद!</p>
-    </div>`;
-  window.print();
-  setTimeout(() => $("printArea").innerHTML = "", 1000);
-}
-
-// ----------------- CSV EXPORT -----------------
-$("exportCsvBtn").onclick = () => {
-  if (!jobs.length) { alert("एक्सपोर्ट करण्यासाठी कामे उपलब्ध नाहीत."); return; }
-  const headers = ["Job Number", "Customer Name", "Phone", "Service", "Status", "Total Amount", "Paid Amount", "Balance"];
-  const rows = jobs.map(j => [
-    `"${j.jobNumber || ""}"`,
-    `"${(j.custName || "").replace(/"/g, '""')}"`,
-    `"${j.custPhone || ""}"`,
-    `"${j.service || ""}"`,
-    `"${j.status || "Pending"}"`,
-    j.totalAmount || 0,
-    j.paidAmount || 0,
-    Math.max((+j.totalAmount || 0) - (+j.paidAmount || 0), 0)
-  ]);
-  const csvContent = "data:text/csv;charset=utf-8,\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `SK_Computer_Jobs_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};
-
-// ----------------- CUSTOMER DASHBOARD FETCH -----------------
-function fetchCustomerJobs(phone) {
-  const cleanPhone = String(phone).replace(/^\+91/, "").trim();
-  const q = query(collection(db, "jobs"), where("custPhone", "==", cleanPhone));
-
-  unsubs.push(onSnapshot(q, snapshot => {
-    const custJobs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-    custJobs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-
-    $("custJobTotal").textContent = custJobs.length;
-    renderCustomerJobs(custJobs);
-  }, err => {
-    console.error("Customer fetch error:", err);
-    $("customerJobsView").innerHTML = `
-      <div class="p-4 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200">
-        <b>त्रुटी:</b> माहिती लोड करताना अडचण आली: ${err.message}
-      </div>`;
-  }));
-}
-
-function renderCustomerJobs(items) {
-  if (!items.length) {
-    $("customerJobsView").innerHTML = `
-      <div class="text-center text-slate-500 py-12 bg-white rounded-xl border p-4 space-y-2">
-        <div class="text-3xl">📁</div>
-        <div class="font-bold text-slate-700">या नंबरवर कोणतेही काम नोंदणीकृत नाही.</div>
-        <p class="text-xs text-slate-400">नवीन सेवेसाठी केंद्राशी संपर्क साधा: ${SHOP_PHONE}</p>
-      </div>`;
-    return;
-  }
-
-  $("customerJobsView").innerHTML = items.map(j => {
-    const tot = +j.totalAmount || 0;
-    const pd = +j.paidAmount || 0;
-    const due = Math.max(tot - pd, 0);
-    const d = j.createdAt?.toDate ? j.createdAt.toDate().toLocaleDateString("mr-IN") : "-";
-
-    return `
-    <div class="bg-white rounded-xl p-4 shadow-sm border border-slate-200 space-y-3">
-      <div class="flex justify-between items-start gap-2">
-        <div>
-          <div class="font-bold text-base text-slate-800 flex items-center gap-2 flex-wrap">
-            ${esc(j.service || "सेवा")}
-            ${j.jobNumber ? `<span class="bg-blue-50 text-blue-700 font-mono text-xs px-2 py-0.5 rounded border border-blue-200">${esc(j.jobNumber)}</span>` : ""}
-          </div>
-          <div class="text-xs text-slate-500 mt-0.5">दिनांक: ${d} · ग्राहक: <b>${esc(j.custName || "-")}</b></div>
-        </div>
-        <span class="text-xs px-2.5 py-1 rounded-full font-semibold border ${stColor[j.status] || "bg-yellow-100 text-yellow-800"}">
-          ${stMr[j.status] || j.status}
-        </span>
-      </div>
-
-      <div class="text-sm bg-slate-50 p-2.5 rounded-lg flex justify-between flex-wrap gap-2 border">
-        <div>एकूण फी: <b>${money(tot)}</b></div>
-        <div>जमा: <b class="text-green-600">${money(pd)}</b></div>
-        <div>बाकी: <b class="${due > 0 ? "text-red-600 font-bold" : "text-green-600"}">${money(due)}</b></div>
-      </div>
-
-      ${j.details ? `<div class="text-xs text-slate-600 bg-slate-50/50 p-2 rounded border border-dashed"><b>टीप:</b> ${esc(j.details)}</div>` : ""}
-
-      ${due > 0 ? `
-        <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div class="text-xs text-slate-600">
-            <span class="font-bold text-blue-900 block mb-1">📲 ऑनलाइन बाकी रक्कम भरण्यासाठी:</span>
-            UPI ID: <span class="font-mono font-semibold">${SHOP_UPI}</span>
-          </div>
-          <div class="flex flex-col items-center">
-            <div id="custQr_${esc(j.id)}"></div>
-            <span class="text-[10px] text-slate-500 mt-1">कोणत्याही UPI ॲपवरून स्कॅन करा</span>
-          </div>
-        </div>
-      ` : ""}
-
-      <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t">
-        <div>
-          ${j.documentUrl 
-            ? `<a href="${esc(j.documentUrl)}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg font-medium hover:bg-blue-100 border border-blue-200 transition">
-                <i class="fa-solid fa-download"></i> कागदपत्र पहा / डाउनलोड
-               </a>` 
-            : `<span class="text-xs text-slate-400 italic">कागदपत्र उपलब्ध नाही</span>`
-          }
-        </div>
-        <button onclick="window.printCustomerBill('${j.id}')" class="text-xs border border-slate-300 hover:bg-slate-50 px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1 transition shadow-sm">
-          <i class="fa-solid fa-print"></i> पावती प्रिंट करा
-        </button>
-      </div>
-    </div>`;
-  }).join("");
-
-  // Render QR Codes for unpaid balances
-  items.forEach(j => {
-    const due = Math.max((+j.totalAmount || 0) - (+j.paidAmount || 0), 0);
-    const qrEl = document.getElementById("custQr_" + j.id);
-    if (qrEl && due > 0 && typeof QRCode !== "undefined") {
-      qrEl.innerHTML = "";
-      const upiUrl = `upi://pay?pa=${encodeURIComponent(SHOP_UPI)}&pn=${encodeURIComponent(SHOP_NAME)}&am=${due.toFixed(2)}&cu=INR&tn=${encodeURIComponent("Job " + (j.jobNumber || ""))}`;
-      try {
-        new QRCode(qrEl, { text: upiUrl, width: 90, height: 90, correctLevel: QRCode.CorrectLevel.M });
-      } catch (e) {
-        console.warn("QR Render error:", e);
-      }
-    }
-  });
-
-  window.printCustomerBill = id => printInvoice(id);
-}
-
-// ----------------- PUBLIC TRACKING FLOW -----------------
-async function runPublicTrack(jobNo, p4) {
-  const resultBox = $("trackResultBox");
-  resultBox.classList.remove("hidden");
-  resultBox.innerHTML = `<div class="text-center text-slate-500 text-sm py-4"><i class="fa-solid fa-spinner fa-spin"></i> शोधत आहे...</div>`;
-
-  try {
-    const trackKey = `${jobNo}-${p4}`;
-    const snap = await getDoc(doc(db, "publicJobs", trackKey));
-    if (!snap.exists()) {
-      resultBox.innerHTML = `
-        <div class="p-4 bg-red-50 text-red-700 text-xs rounded-xl border border-red-200 text-center">
-          <b>माहिती सापडली नाही!</b><br>कृपया Job No. (उदा. SK-2026-0001) आणि मोबाईलचे शेवटचे ४ अंक तपासून पुन्हा प्रयत्न करा.
-        </div>`;
-      return;
-    }
-
-    const d = snap.data();
-    const dt = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString("mr-IN") : "-";
-
-    resultBox.innerHTML = `
-      <div class="bg-slate-50 p-4 rounded-xl border border-blue-200 space-y-2">
-        <div class="flex justify-between items-center">
-          <span class="font-bold text-base text-blue-900">${esc(d.title || "सेवा")}</span>
-          <span class="text-xs px-2.5 py-1 rounded-full font-semibold border ${stColor[d.status] || "bg-yellow-100 text-yellow-800"}">
-            ${stMr[d.status] || d.status}
-          </span>
-        </div>
-        <div class="text-xs text-slate-500">जॉब क्र: <span class="font-mono font-bold text-slate-800">${esc(d.jobNumber)}</span> | नोंदणी: ${dt}</div>
-        <div class="text-xs bg-white p-2.5 rounded-lg border flex justify-between">
-          <span>एकूण: <b>${money(d.totalAmount)}</b></span>
-          <span>जमा: <b class="text-green-600">${money(d.paidAmount)}</b></span>
-          <span>बाकी: <b class="${d.balance > 0 ? "text-red-600 font-bold" : "text-green-600"}">${money(d.balance)}</b></span>
-        </div>
-      </div>`;
-  } catch (err) {
-    resultBox.innerHTML = `<div class="p-3 bg-red-50 text-red-600 text-xs rounded-lg text-center">त्रुटी आली: ${err.message}</div>`;
-  }
-}
-
-$("trackSubmitBtn").onclick = () => {
-  const j = $("trackJobInput").value.trim().toUpperCase();
-  const p = $("trackPhoneInput").value.replace(/\D/g, "");
-  if (!j || p.length !== 4) {
-    alert("कृपया पूर्ण Job No. आणि मोबाईलचे शेवटचे ४ अंक टाका.");
-    return;
-  }
-  runPublicTrack(j, p);
-};
-
-// URL Query Params Auto-Tracking (?job=SK-2026-0001&p=6077)
-(function checkUrlParams() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const j = (urlParams.get("job") || "").trim().toUpperCase();
-  const p = (urlParams.get("p") || "").replace(/\D/g, "");
-  if (j && p.length === 4) {
-    switchSection("track");
-    $("trackJobInput").value = j;
-    $("trackPhoneInput").value = p;
-    runPublicTrack(j, p);
-  }
-})();
+$('trackButton').onclick=track;
+const params=new URLSearchParams(location.search); if(params.get('job')&&params.get('p')) { $('trackJob').value=params.get('job'); $('trackLast4').value=params.get('p'); show('trackSection'); track(); }
 </script>
 </body>
 </html>
