@@ -5,11 +5,17 @@ service firebase.storage {
     function isAdmin() {
       return signedIn() && firestore.exists(/databases/(default)/documents/admins/$(request.auth.uid));
     }
+    function ownsPhone(phone) {
+      return signedIn() && request.auth.token.phone_number is string
+        && request.auth.token.phone_number == '+91' + phone;
+    }
     match /jobs/{customerPhone}/{fileName} {
-      allow read, delete: if isAdmin();
+      // Admins and the Firebase-authenticated phone owner may read the private file.
+      allow read: if isAdmin() || ownsPhone(customerPhone);
       allow create, update: if isAdmin()
         && request.resource.size <= 5 * 1024 * 1024
         && (request.resource.contentType.matches('image/.*') || request.resource.contentType == 'application/pdf');
+      allow delete: if isAdmin();
     }
     match /customer_docs/{uid}/{fileName} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());

@@ -13,15 +13,16 @@ service cloud.firestore {
         && data.totalAmount >= 0 && data.paidAmount >= 0
         && data.paidAmount <= data.totalAmount;
     }
-    function validFileUrl(url) {
-      return url == '' || (url is string && url.matches('https://firebasestorage.googleapis.com/.*'));
+    function validDocument(data) {
+      return (!('documentPath' in data) || data.documentPath == ''
+        || (data.documentPath is string && data.documentPath.matches('jobs/[0-9]{10}/[A-Za-z0-9_.-]+')))
+        && (!('documentUrl' in data) || data.documentUrl == ''
+        || (data.documentUrl is string && data.documentUrl.matches('https://firebasestorage.googleapis.com/.*')));
     }
-
     match /admins/{uid} {
       allow get: if signedIn() && request.auth.uid == uid;
       allow list, write: if false;
     }
-
     match /customers/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow create, update: if verifiedEmail() && request.auth.uid == uid
@@ -29,56 +30,37 @@ service cloud.firestore {
         && request.resource.data.email == request.auth.token.email;
       allow delete: if isAdmin();
     }
-
     match /jobs/{id} {
-      // Querying by custPhone is allowed only for the signed-in, verified phone number.
+      // For phone login, rules authorize only the matching verified Firebase phone claim.
       allow get, list: if isAdmin() || (signedIn() && (
         resource.data.ownerUid == request.auth.uid ||
         (request.auth.token.phone_number is string
           && request.auth.token.phone_number == '+91' + resource.data.custPhone)
       ));
-
-      // Admin job creation/update is validated here as well as in the UI.
-      allow create: if isAdmin() && validAmounts(request.resource.data)
-        && validFileUrl(request.resource.data.documentUrl);
+      allow create: if isAdmin() && validAmounts(request.resource.data) && validDocument(request.resource.data);
+      // Keep zero-fee email customer job requests supported by the legacy portal.
       allow create: if verifiedEmail()
-        && request.resource.data.keys().hasOnly([
-          'ownerUid','custName','custPhone','custEmail','service','details','documentUrl',
-          'status','totalAmount','paidAmount','paymentStatus','payments','adminNotes','createdAt','updatedAt'
-        ])
+        && request.resource.data.keys().hasOnly(['ownerUid','custName','custPhone','custEmail','service','details','documentUrl','status','totalAmount','paidAmount','paymentStatus','payments','adminNotes','createdAt','updatedAt'])
         && request.resource.data.ownerUid == request.auth.uid
-        && request.resource.data.status == 'Pending'
-        && request.resource.data.totalAmount == 0
-        && request.resource.data.paidAmount == 0
-        && request.resource.data.paymentStatus == 'Unpaid'
-        && request.resource.data.payments.size() == 0
-        && request.resource.data.adminNotes == ''
-        && validFileUrl(request.resource.data.documentUrl);
-      allow update: if isAdmin() && validAmounts(request.resource.data)
-        && validFileUrl(request.resource.data.documentUrl);
+        && request.resource.data.status == 'Pending' && request.resource.data.totalAmount == 0
+        && request.resource.data.paidAmount == 0 && request.resource.data.paymentStatus == 'Unpaid'
+        && request.resource.data.payments.size() == 0 && request.resource.data.adminNotes == ''
+        && validDocument(request.resource.data);
+      allow update: if isAdmin() && validAmounts(request.resource.data) && validDocument(request.resource.data);
       allow delete: if isAdmin();
     }
-
     match /publicJobs/{trackId} {
-      // Only a limited, non-identifying public projection is exposed for job tracking.
-      allow get: if true;
+      // A 128-bit random token is the lookup key; documents contain no customer name/phone.
+      allow get: if trackId.matches('[a-f0-9]{32}');
       allow list: if false;
       allow create, update: if isAdmin()
-        && request.resource.data.keys().hasOnly([
-          'jobNumber','title','status','totalAmount','paidAmount','balance','createdAt','updatedAt'
-        ])
-        && request.resource.data.totalAmount is number
-        && request.resource.data.paidAmount is number
-        && request.resource.data.balance is number
-        && request.resource.data.totalAmount >= 0
-        && request.resource.data.paidAmount >= 0
+        && request.resource.data.keys().hasOnly(['jobNumber','title','status','totalAmount','paidAmount','balance','createdAt','updatedAt'])
+        && request.resource.data.totalAmount is number && request.resource.data.paidAmount is number && request.resource.data.balance is number
+        && request.resource.data.totalAmount >= 0 && request.resource.data.paidAmount >= 0
         && request.resource.data.paidAmount <= request.resource.data.totalAmount
         && request.resource.data.balance == request.resource.data.totalAmount - request.resource.data.paidAmount;
       allow delete: if isAdmin();
     }
-
-    match /counters/{counterId} {
-      allow read, write: if isAdmin();
-    }
+    match /counters/{counterId} { allow read, write: if isAdmin(); }
   }
 }
